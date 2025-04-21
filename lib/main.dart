@@ -16,7 +16,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   List<Product> products = [
     Product(
-      name: '٥مليم حسين كامل',
+      name: '٥ مليم حسين كامل',
       price: 90,
       images: [
         'https://i.postimg.cc/NjDGyMn8/4.jpg',
@@ -29,7 +29,7 @@ class _MyAppState extends State<MyApp> {
       inStock: 5,
     ),
     Product(
-      name: '١مليم فاروق',
+      name: '١ مليم فاروق',
       price: 65,
       images: [
         'https://i.postimg.cc/Z54KK3wK/6.jpg',
@@ -42,7 +42,7 @@ class _MyAppState extends State<MyApp> {
       inStock: 3,
     ),
     Product(
-      name: '١مليم فاروق',
+      name: '١ مليم فاروق',
       price: 75,
       images: [
         'https://i.postimg.cc/CBfDXpX0/1.jpg',
@@ -55,7 +55,7 @@ class _MyAppState extends State<MyApp> {
       inStock: 10,
     ),
     Product(
-      name: '٢مليم فؤاد',
+      name: '٢ مليم فؤاد',
       price: 45,
       images: [
         'https://i.postimg.cc/15YJycmD/8.jpg',
@@ -64,6 +64,19 @@ class _MyAppState extends State<MyApp> {
       country: 'Egypt',
       year: 1929,
       value: 2,
+      seller: 'Jimmy',
+      inStock: 2,
+    ),
+    Product(
+      name: '١٠ سنت' ,
+      price: 15,
+      images: [
+        'https://i.postimg.cc/261CKNxP/9.jpg',
+        'https://i.postimg.cc/Px0dGV3N/10.jpg',
+      ],
+      country: 'Zimbabwe',
+      year: 1987,
+      value: 10,
       seller: 'Jimmy',
       inStock: 2,
     ),

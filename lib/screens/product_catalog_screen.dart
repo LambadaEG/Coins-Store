@@ -20,6 +20,29 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   final Map<int, int> _currentPageIndexes = {};
   final Map<int, PageController> _pageControllers = {};
 
+  // State for selected filters
+  String? selectedCountry;
+  int? selectedYear;
+  late List<Product> filteredProducts;
+
+  @override
+  void initState() {
+    super.initState();
+    filteredProducts = widget.products; // Initially show all products
+  }
+
+  // Filter products based on the selected country and year
+  void filterProducts() {
+    setState(() {
+      filteredProducts = widget.products.where((product) {
+        bool matchesCountry = selectedCountry == null || selectedCountry == 'Any' || product.country == selectedCountry;
+        bool matchesYear = selectedYear == null || selectedYear == -1 || product.year == selectedYear;
+
+        return matchesCountry && matchesYear;
+      }).toList();
+    });
+  }
+
   @override
   void dispose() {
     _pageControllers.forEach((_, controller) => controller.dispose());
@@ -28,6 +51,18 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get all unique countries and years
+    final countries = widget.products.map((product) => product.country).toSet().toList();
+    final years = widget.products.map((product) => product.year).toSet().toList();
+
+    // Sort countries alphabetically in descending order and insert "Any" at the beginning
+    countries.sort((a, b) => a.compareTo(b)); 
+    countries.insert(0, 'Any');
+
+    // Sort years in descending order and insert "Any" at the beginning
+    years.sort((a, b) => b.compareTo(a)); 
+    years.insert(0, -1);  // Use -1 to represent "Any" for year filter
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Coin Catalog'),
@@ -56,10 +91,59 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       ),
       body: Column(
         children: [
+          // Filter section
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                // Country Dropdown
+                Expanded(
+                  child: DropdownButton<String>(
+                    hint: const Text('Select Country'),
+                    value: selectedCountry,
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedCountry = newValue;
+                      });
+                      filterProducts();
+                    },
+                    items: countries.map((country) {
+                      return DropdownMenuItem<String>(
+                        value: country,
+                        child: Text(country),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Year Dropdown
+                Expanded(
+                  child: DropdownButton<int>(
+                    hint: const Text('Select Year'),
+                    value: selectedYear,
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedYear = newValue;
+                      });
+                      filterProducts();
+                    },
+                    items: years.map((year) {
+                      return DropdownMenuItem<int>(
+                        value: year,
+                        child: Text(year == -1 ? 'Any' : year.toString()),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Product Grid
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(10),
-              itemCount: widget.products.length,
+              itemCount: filteredProducts.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 10,
@@ -67,7 +151,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 childAspectRatio: 0.64,
               ),
               itemBuilder: (context, index) {
-                final product = widget.products[index];
+                final product = filteredProducts[index];
                 _currentPageIndexes[index] = _currentPageIndexes[index] ?? 0;
                 _pageControllers[index] = _pageControllers[index] ?? PageController();
 
@@ -195,4 +279,3 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     );
   }
 }
-

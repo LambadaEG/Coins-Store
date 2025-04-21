@@ -184,7 +184,7 @@ class CartScreen extends StatelessWidget {
                       );
                     },
                     child: const Text(
-                      'Proceed to Checkout',
+                      'Send Request to the Seller',
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),
