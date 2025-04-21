@@ -167,8 +167,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                         return Image.network(
                                           product.images[imageIndex],
                                           fit: BoxFit.contain,
+                                          cacheWidth: (itemWidth * MediaQuery.of(context).devicePixelRatio).round(),
                                           errorBuilder: (context, error, _) =>
-                                              const Icon(Icons.monetization_on, size: 60),
+                                            const Icon(Icons.monetization_on, size: 60),
                                         );
                                       },
                                     ),
