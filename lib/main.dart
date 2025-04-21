@@ -7,23 +7,25 @@ void main() {
 class Product {
   final String name;
   final double price;
-  final String image;
+  final List<String> images;
   final String country;
   final int year;
   final double value;  
   final String seller;
+  final int inStock;
 
   Product({
     required this.name,
     required this.price,
-    required this.image,
+    required this.images,
     required this.country,
     required this.year,
-    required this.value,  // Added to constructor
+    required this.value,
     required this.seller,
+    required this.inStock,
   });
 
-    String get formattedPrice {
+  String get formattedPrice {
     return price == price.toInt().toDouble() 
         ? 'EGP ${price.toInt()}' 
         : 'EGP ${price.toStringAsFixed(2)}';
@@ -38,49 +40,67 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   List<Product> products = [
     Product(
-      name: 'Egyptian Coin',
-      price: 8000,
-      image: 'https://i.imgur.com/Vms4QE0.jpeg',
+      name: '٥مليم حسين كامل',
+      price: 90,
+      images: [
+        'https://i.postimg.cc/NjDGyMn8/4.jpg',
+        'https://i.postimg.cc/65spgFRZ/3.jpg',
+      ],
       country: 'Egypt',
-      year: 1980,
-      value: 10,
+      year: 1916,
+      value: 5,
       seller: 'Jimmy',
+      inStock: 5,
     ),
     Product(
-      name: 'USA Coin',
-      price: 4000,
-      image: 'https://i.imgur.com/b24RFio.jpeg',
-      country: 'USA',
-      year: 1923,
-      value: 10,
+      name: '١مليم فاروق',
+      price: 65,
+      images: [
+        'https://i.postimg.cc/Z54KK3wK/6.jpg',
+        'https://i.postimg.cc/HsQkg34h/5.jpg',
+      ],
+      country: 'Egypt',
+      year: 1947,
+      value: 1,
       seller: 'Jimmy',
+      inStock: 3,
     ),
     Product(
       name: '١مليم فاروق',
       price: 75,
-      image: 'https://i.postimg.cc/CBfDXpX0/1.jpg',
+      images: [
+        'https://i.postimg.cc/CBfDXpX0/1.jpg',
+        'https://i.postimg.cc/5yjmLZPn/2.jpg',
+      ],
       country: 'Egypt',
       year: 1938,
-      value: 10,
+      value: 1,
       seller: 'Jimmy',
+      inStock: 10,
     ),
     Product(
-      name: 'Italy Coin',
-      price: 2000,
-      image: 'https://i.imgur.com/Vms4QE0.jpeg',
-      country: 'Italy',
-      year: 1902,
-            value: 10,
+      name: '٢مليم فؤاد',
+      price: 45,
+      images: [
+        'https://i.postimg.cc/15YJycmD/8.jpg',
+        'https://i.postimg.cc/59gsRWD7/7.jpg',
+      ],
+      country: 'Egypt',
+      year: 1929,
+      value: 2,
       seller: 'Jimmy',
+      inStock: 2,
     ),
   ];
 
   List<Product> cart = [];
 
   void addToCart(Product product) {
-    setState(() {
-      cart.add(product);
-    });
+    if (product.inStock > 0) {
+      setState(() {
+        cart.add(product);
+      });
+    }
   }
 
   void removeFromCart(Product product) {
@@ -159,54 +179,65 @@ class ProductCatalogScreen extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                Product p = products[index];
-                return Card(
-                  margin: EdgeInsets.all(10),
-                  elevation: 2,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.all(10),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        p.image,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => 
-                          Icon(Icons.monetization_on, size: 60),
-                      ),
-                    ),
-                    title: Text(p.name, style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 4),
-                        Text('EGP ${p.price.toStringAsFixed(2)}',
-                            style: TextStyle(color: Colors.green)),
-                        SizedBox(height: 2),
-                        Text('${p.country}, ${p.year}',
-                            style: TextStyle(fontSize: 12)),
-                        Text('Seller: ${p.seller}'),
-                      ],
-                    ),
-                    trailing: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[800],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () => addToCart(p),
-                      child: Text('Add to Cart',style: TextStyle(color: Colors.white),),
-                    ),
+  child: GridView.builder(
+    padding: EdgeInsets.all(10),
+    itemCount: products.length,
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2, // 2 items per row
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 0.65, // Adjust for card height/width ratio
+    ),
+    itemBuilder: (context, index) {
+      Product p = products[index];
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Display only the first image for compact layout
+              AspectRatio(
+                aspectRatio: 1, // square image
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    p.images[0],
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(Icons.monetization_on, size: 60),
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 4),
+              Text(p.formattedPrice, style: TextStyle(color: Colors.green)),
+              Text('${p.country}, ${p.year}', style: TextStyle(fontSize: 12)),
+              Text('Stock: ${p.inStock}', style: TextStyle(fontSize: 12, color: p.inStock > 0 ? Colors.green : Colors.red)),
+              Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: p.inStock > 0 ? Colors.blue[800] : Colors.grey,
+                  minimumSize: Size(double.infinity, 35),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: p.inStock > 0 ? () => addToCart(p) : null,
+                child: Text(
+                  p.inStock > 0 ? 'Add' : 'Out',
+                  style: TextStyle(fontSize: 12, color: Colors.white),
+                ),
+              ),
+            ],
           ),
+        ),
+      );
+    },
+  ),
+),
+
           Padding(
             padding: EdgeInsets.all(16),
             child: ElevatedButton.icon(
@@ -243,17 +274,38 @@ class CartScreen extends StatelessWidget {
     double total = cart.fold(0, (sum, item) => sum + item.price);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Cart')),
+      appBar: AppBar(
+        title: const Text('Your Cart'),
+        actions: [
+          if (cart.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: Text(
+                  '${cart.length} item${cart.length > 1 ? 's' : ''}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+        ],
+      ),
       body: cart.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_cart_outlined, size: 60, color: Colors.grey),
+                  Icon(Icons.shopping_cart_outlined, 
+                      size: 60, 
+                      color: Colors.grey.withOpacity(0.5)),
                   const SizedBox(height: 16),
                   const Text(
                     'Your cart is empty',
                     style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Continue Shopping'),
                   ),
                 ],
               ),
@@ -265,26 +317,50 @@ class CartScreen extends StatelessWidget {
                     itemCount: cart.length,
                     itemBuilder: (context, index) {
                       final p = cart[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        child: ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              p.image,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.monetization_on, size: 50),
+                      return Dismissible(
+                        key: Key(p.name + index.toString()),
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (direction) => removeFromCart(p),
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          child: ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                p.images[0],
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.monetization_on, size: 60),
+                              ),
                             ),
-                          ),
-                          title: Text(p.name),
-                          subtitle: Text('EGP ${p.price.toStringAsFixed(2)}'),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => removeFromCart(p),
+                            title: Text(p.name),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('EGP ${p.price.toStringAsFixed(2)}'),
+                                  Text(
+                                    'In Stock: ${p.inStock}',
+                                    style: TextStyle(
+                                      color: p.inStock > 0 
+                                        ? Colors.green 
+                                        : Colors.red,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => removeFromCart(p),
+                            ),
                           ),
                         ),
                       );
@@ -294,25 +370,51 @@ class CartScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total:',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                    color: Theme.of(context).cardColor,
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 1,
+                        blurRadius: 5,
                       ),
-                      Text(
-                        'EGP ${total.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green[800],
-                        ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Subtotal:',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Text(
+                            'EGP ${total.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Total:',
+                            style: TextStyle(
+                                fontSize: 18, 
+                                fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'EGP ${total.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -321,20 +423,28 @@ class CartScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Theme.of(context).primaryColor,
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     onPressed: () {
-                      // Checkout logic would go here
+                      // Checkout logic
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Proceeding to checkout...')),
+                        SnackBar(
+                          content: const Text('Proceeding to checkout...'),
+                          action: SnackBarAction(
+                            label: 'OK',
+                            onPressed: () {},
+                          ),
+                        ),
                       );
                     },
-                    child: const Text('Checkout', style: TextStyle(fontSize: 18)),
+                    child: const Text(
+                      'Proceed to Checkout',
+                      style: TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
               ],
