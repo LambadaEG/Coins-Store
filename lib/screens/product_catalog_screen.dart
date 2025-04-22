@@ -29,10 +29,20 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     super.dispose();
   }
 
+  bool _canAddToCart(Product product) {
+    if (product.inStock <= 0) return false;
+    final cartQuantity = widget.cart.where((p) =>
+        p.name == product.name &&
+        p.year == product.year &&
+        p.country == product.country).length;
+    return cartQuantity < product.inStock;
+  }
+
   @override
   Widget build(BuildContext context) {
     final countries = widget.products.map((p) => p.country).toSet().toList()..sort();
-    final years = widget.products.map((p) => p.year.toString()).toSet().toList()..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
+    final years = widget.products.map((p) => p.year.toString()).toSet().toList()
+      ..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
     countries.insert(0, 'Any');
     years.insert(0, 'Any');
 
@@ -121,7 +131,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 final spacing = 10.0;
                 final totalSpacing = spacing * (crossAxisCount - 1);
                 final itemWidth = (screenWidth - totalSpacing - 20) / crossAxisCount;
-                final itemHeight = 300.0;
+                final itemHeight = 330.0;
                 final aspectRatio = itemWidth / itemHeight;
 
                 return GridView.builder(
@@ -138,107 +148,119 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     _currentPageIndexes[index] = _currentPageIndexes[index] ?? 0;
                     _pageControllers[index] = _pageControllers[index] ?? PageController();
 
-                    return Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AspectRatio(
-                              aspectRatio: 1,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Stack(
-                                  alignment: Alignment.bottomCenter,
-                                  children: [
-                                    PageView.builder(
-                                      controller: _pageControllers[index]!,
-                                      itemCount: product.images.length,
-                                      onPageChanged: (page) {
-                                        setState(() {
-                                          _currentPageIndexes[index] = page;
-                                        });
-                                      },
-                                      itemBuilder: (context, imageIndex) {
-                                        return Image.network(
-                                          product.images[imageIndex],
-                                          fit: BoxFit.contain,
-                                          cacheWidth: (itemWidth * MediaQuery.of(context).devicePixelRatio).round(),
-                                          errorBuilder: (context, error, _) =>
-                                            const Icon(Icons.monetization_on, size: 60),
-                                        );
-                                      },
-                                    ),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: List.generate(
-                                        product.images.length,
-                                        (dotIndex) => GestureDetector(
-                                          onTap: () {
-                                            _pageControllers[index]!.animateToPage(
-                                              dotIndex,
-                                              duration: const Duration(milliseconds: 300),
-                                              curve: Curves.easeInOut,
-                                            );
-                                          },
-                                          child: Container(
-                                            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-                                            width: 6,
-                                            height: 6,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: _currentPageIndexes[index] == dotIndex
-                                                  ? Colors.blue
-                                                  : Colors.grey,
-                                            ),
+                    final canAdd = _canAddToCart(product);
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AspectRatio(
+                                    aspectRatio: 1,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Stack(
+                                        alignment: Alignment.bottomCenter,
+                                        children: [
+                                          PageView.builder(
+                                            controller: _pageControllers[index]!,
+                                            itemCount: product.images.length,
+                                            onPageChanged: (page) {
+                                              setState(() {
+                                                _currentPageIndexes[index] = page;
+                                              });
+                                            },
+                                            itemBuilder: (context, imageIndex) {
+                                              return Image.network(
+                                                product.images[imageIndex],
+                                                fit: BoxFit.contain,
+                                                cacheWidth: (itemWidth * MediaQuery.of(context).devicePixelRatio).round(),
+                                                errorBuilder: (context, error, _) =>
+                                                  const Icon(Icons.monetization_on, size: 60),
+                                              );
+                                            },
                                           ),
-                                        ),
+                                          if (product.images.length > 1)
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: List.generate(
+                                                product.images.length,
+                                                (dotIndex) => GestureDetector(
+                                                  onTap: () {
+                                                    _pageControllers[index]!.animateToPage(
+                                                      dotIndex,
+                                                      duration: const Duration(milliseconds: 300),
+                                                      curve: Curves.easeInOut,
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+                                                    width: 6,
+                                                    height: 6,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: _currentPageIndexes[index] == dotIndex
+                                                          ? Colors.blue
+                                                          : Colors.grey,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    product.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(product.formattedPrice, style: const TextStyle(color: Colors.green)),
+                                  Text('${product.country}, ${product.year}', style: const TextStyle(fontSize: 12)),
+                                  Text('Seller: ${product.seller}', style: const TextStyle(fontSize: 12)),
+                                  Text(
+                                    'Stock: ${product.inStock}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: product.inStock > 0 ? Colors.green : Colors.red,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              product.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(product.formattedPrice, style: const TextStyle(color: Colors.green)),
-                            Text('${product.country}, ${product.year}', style: const TextStyle(fontSize: 12)),
-                            Text('Seller: ${product.seller}', style: const TextStyle(fontSize: 12)),
-                            Text(
-                              'Stock: ${product.inStock}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: product.inStock > 0 ? Colors.green : Colors.red,
-                              ),
-                            ),
-                            const Spacer(),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: product.inStock > 0 ? Colors.blue[800] : Colors.grey,
-                                minimumSize: const Size(double.infinity, 35),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              onPressed: product.inStock > 0 ? () => widget.addToCart(product) : null,
-                              child: Text(
-                                product.inStock > 0 ? 'Add' : 'Out',
-                                style: const TextStyle(fontSize: 12, color: Colors.white),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: canAdd ? Colors.blue[800] : Colors.grey,
+                            minimumSize: const Size(double.infinity, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          onPressed: canAdd ? () => widget.addToCart(product) : null,
+                          child: Text(
+                            canAdd ? 'Add to Cart' : 
+                              product.inStock > 0 ? 'Max Reached' : 'Out of Stock',
+                            style: const TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 );
