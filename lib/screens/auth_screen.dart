@@ -38,7 +38,18 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isLogin ? 'Login' : 'Sign Up')),
+      appBar: AppBar(title: Text(
+      _isLogin ? 'Login' : 'Sign Up',
+      style: TextStyle(
+        color: Theme.of(context).primaryColor, // Uses your theme's primary color
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    backgroundColor: Colors.white, // Optional: sets appbar background to white
+    iconTheme: IconThemeData(
+      color: Theme.of(context).primaryColor, // Colors back button to match
+    ),
+  ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Form(
