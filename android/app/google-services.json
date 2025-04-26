@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "16483934656",
+    "project_id": "coins-store-799b6",
+    "storage_bucket": "coins-store-799b6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:16483934656:android:c687524857f911c56b6825",
+        "android_client_info": {
+          "package_name": "com.example.project_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtYOHfieRNjj5f0cMtqze75OZjSApbpMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

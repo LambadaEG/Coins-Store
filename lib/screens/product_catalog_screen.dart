@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:project_1/models/product.dart';
+import 'package:project_1/models/product_catalog_state.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
-  final List<Product> products;
-  final List<Product> cart;
-  final Function(Product) addToCart;
-
-  const ProductCatalogScreen({
-    required this.products,
-    required this.cart,
-    required this.addToCart,
-  });
-
   @override
   State<ProductCatalogScreen> createState() => _ProductCatalogScreenState();
 }
@@ -29,9 +21,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     super.dispose();
   }
 
-  bool _canAddToCart(Product product) {
+  bool _canAddToCart(Product product, List<Product> cart) {
     if (product.inStock <= 0) return false;
-    final cartQuantity = widget.cart.where((p) =>
+    final cartQuantity = cart.where((p) =>
         p.name == product.name &&
         p.year == product.year &&
         p.country == product.country).length;
@@ -40,13 +32,17 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final countries = widget.products.map((p) => p.country).toSet().toList()..sort();
-    final years = widget.products.map((p) => p.year.toString()).toSet().toList()
+    final catalogState = Provider.of<ProductCatalogState>(context);
+    final products = catalogState.products;
+    final cart = catalogState.cart;
+
+    final countries = products.map((p) => p.country).toSet().toList()..sort();
+    final years = products.map((p) => p.year.toString()).toSet().toList()
       ..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
     countries.insert(0, 'Any');
     years.insert(0, 'Any');
 
-    final filteredProducts = widget.products.where((product) {
+    final filteredProducts = products.where((product) {
       final matchCountry = _selectedCountry == 'Any' || product.country == _selectedCountry;
       final matchYear = _selectedYear == 'Any' || product.year.toString() == _selectedYear;
       return matchCountry && matchYear;
@@ -60,14 +56,14 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             icon: Stack(
               children: [
                 const Icon(Icons.shopping_cart),
-                if (widget.cart.isNotEmpty)
+                if (cart.isNotEmpty)
                   Positioned(
                     right: 0,
                     child: CircleAvatar(
                       radius: 8,
                       backgroundColor: Colors.red,
                       child: Text(
-                        '${widget.cart.length}',
+                        '${cart.length}',
                         style: const TextStyle(fontSize: 12, color: Colors.white),
                       ),
                     ),
@@ -148,7 +144,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     _currentPageIndexes[index] = _currentPageIndexes[index] ?? 0;
                     _pageControllers[index] = _pageControllers[index] ?? PageController();
 
-                    final canAdd = _canAddToCart(product);
+                    final canAdd = _canAddToCart(product, cart);
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -253,7 +249,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
-                          onPressed: canAdd ? () => widget.addToCart(product) : null,
+                          onPressed: canAdd ? () => catalogState.addToCart(product) : null,
                           child: Text(
                             canAdd ? 'Add to Cart' : 
                               product.inStock > 0 ? 'Max Reached' : 'Out of Stock',
