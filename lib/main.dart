@@ -44,13 +44,7 @@ class MyApp extends StatelessWidget {
         home: AuthWrapper(),
         routes: {
           '/catalog': (context) => ProductCatalogScreen(),
-          '/cart': (context) {
-            final catalogState = Provider.of<ProductCatalogState>(context, listen: false);
-            return CartScreen(
-              cart: catalogState.cart,
-              removeFromCart: catalogState.removeFromCart,
-            );
-          },
+          '/cart': (context) => CartScreen(),  // Simplified since CartScreen now uses Provider directly
           '/request': (context) => RequestCoinScreen(),
         },
         debugShowCheckedModeBanner: false,

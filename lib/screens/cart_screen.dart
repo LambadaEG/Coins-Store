@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:project_1/models/product.dart';
+import 'package:provider/provider.dart';
+import 'package:project_1/models/product_catalog_state.dart';
 
 class CartScreen extends StatelessWidget {
-  final List<Product> cart;
-  final Function(Product) removeFromCart;
-
-  const CartScreen({
-    required this.cart,
-    required this.removeFromCart,
-    Key? key,
-  }) : super(key: key);
+  const CartScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final catalogState = Provider.of<ProductCatalogState>(context, listen: true);
+    final cart = catalogState.cart;
     double total = cart.fold(0, (sum, item) => sum + item.price);
 
     return Scaffold(
@@ -60,7 +56,7 @@ class CartScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final p = cart[index];
                       return Dismissible(
-                        key: Key(p.name + index.toString()),
+                        key: Key('${p.name}_${p.year}_${index}'),
                         background: Container(
                           color: Colors.red,
                           alignment: Alignment.centerRight,
@@ -68,7 +64,7 @@ class CartScreen extends StatelessWidget {
                           child: const Icon(Icons.delete, color: Colors.white),
                         ),
                         direction: DismissDirection.endToStart,
-                        onDismissed: (direction) => removeFromCart(p),
+                        onDismissed: (direction) => catalogState.removeFromCart(p),
                         child: Card(
                           margin: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
@@ -89,19 +85,19 @@ class CartScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('EGP ${p.price.toStringAsFixed(2)}'),
-                                  Text(
-                                    'In Stock: ${p.inStock}',
-                                    style: TextStyle(
-                                      color: p.inStock > 0 
-                                        ? Colors.green 
-                                        : Colors.red,
-                                    ),
+                                Text(
+                                  'In Stock: ${p.inStock}',
+                                  style: TextStyle(
+                                    color: p.inStock > 0 
+                                      ? Colors.green 
+                                      : Colors.red,
                                   ),
+                                ),
                               ],
                             ),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => removeFromCart(p),
+                              onPressed: () => catalogState.removeFromCart(p),
                             ),
                           ),
                         ),
@@ -172,19 +168,15 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // Checkout logic
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Sending request to the buyer'),
-                          action: SnackBarAction(
-                            label: 'OK',
-                            onPressed: () {},
-                          ),
+                        const SnackBar(
+                          content: Text('Order placed successfully!'),
+                          duration: Duration(seconds: 2),
                         ),
                       );
                     },
                     child: const Text(
-                      'Send Request to the Seller',
+                      'Place Order',
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project_1/models/product.dart';
 import 'package:project_1/models/product_catalog_state.dart';
+import 'package:project_1/services/auth_service.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
   @override
@@ -33,6 +34,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   @override
   Widget build(BuildContext context) {
     final catalogState = Provider.of<ProductCatalogState>(context);
+    final authService = Provider.of<AuthService>(context, listen: false);
     final products = catalogState.products;
     final cart = catalogState.cart;
 
@@ -52,6 +54,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       appBar: AppBar(
         title: const Text('Coin Catalog'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authService.signOut();
+            },
+            tooltip: 'Sign Out',
+          ),
           IconButton(
             icon: Stack(
               children: [
