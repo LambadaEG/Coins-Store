@@ -117,28 +117,14 @@ class ProductListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: product.images.isNotEmpty
-          ? Image.network(
-              product.images.first,
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(Icons.monetization_on),
-            )
-          : const Icon(Icons.monetization_on, size: 50),
+      leading: Image.network(product.images.first),
       title: Text(product.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('EGP ${product.price.toStringAsFixed(2)}'),
-          Text('Stock: ${product.inStock}'),
-        ],
-      ),
+      subtitle: Text('EGP ${product.price.toStringAsFixed(2)}'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(Icons.edit),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -147,7 +133,7 @@ class ProductListItem extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: Icon(Icons.delete, color: Colors.red),
             onPressed: () => _confirmDelete(context, product.id),
           ),
         ],
@@ -159,26 +145,46 @@ class ProductListItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this product?'),
+        title: Text('Confirm Delete'),
+        content: Text('Are you sure you want to delete this product?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              await FirebaseFirestore.instance
-                  .collection('products')
-                  .doc(productId)
-                  .delete();
-              if (context.mounted) {
-                Navigator.pop(ctx);
-                Provider.of<ProductCatalogState>(context, listen: false)
-                    .fetchProducts();
+              try {
+                // Perform deletion
+                await FirebaseFirestore.instance
+                    .collection('products')
+                    .doc(productId)
+                    .delete();
+
+                // Close dialog only once
+                if (Navigator.canPop(ctx)) {
+                  Navigator.pop(ctx);
+                }
+
+                // Refresh product list
+                if (context.mounted) {
+                  Provider.of<ProductCatalogState>(context, listen: false)
+                      .fetchProducts();
+                }
+
+              } catch (e) {
+                // Handle errors and ensure dialog closes
+                if (Navigator.canPop(ctx)) {
+                  Navigator.pop(ctx);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to delete: ${e.toString()}')),
+                  );
+                }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
