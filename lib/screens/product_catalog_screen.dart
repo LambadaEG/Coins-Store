@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:project_1/models/product.dart';
 import 'package:project_1/models/product_catalog_state.dart';
 import 'package:project_1/services/auth_service.dart';
+import 'package:project_1/screens/profile_screen.dart'; // Add this import
 
 class ProductCatalogScreen extends StatefulWidget {
   @override
@@ -78,6 +79,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         title: Text(
           'Coin Catalog',
           style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
+        leading: IconButton( // Added profile icon
+          icon: Icon(Icons.person),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ProfileScreen()),
+          ),
         ),
         actions: [
           IconButton(

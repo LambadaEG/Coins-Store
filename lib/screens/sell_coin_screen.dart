@@ -7,8 +7,11 @@ import 'package:provider/provider.dart';
 import 'package:project_1/models/product_catalog_state.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:project_1/models/product.dart';
 
 class SellCoinScreen extends StatefulWidget {
+  final Product? editingProduct;
+  const SellCoinScreen({super.key, this.editingProduct});
   @override
   _SellCoinScreenState createState() => _SellCoinScreenState();
 }
@@ -123,17 +126,19 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   }
 
   String? _validateNumber(String? value, String fieldName, {bool allowDecimal = true}) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter $fieldName';
-    }
-    final number = allowDecimal ? double.tryParse(value) : int.tryParse(value);
-    if (number == null) {
-      return 'Please enter a valid number';
-    }
-    if (number <= 0) {
-      return '$fieldName must be greater than 0';
-    }
-    return null;
+  if (value == null || value.isEmpty) {
+    return 'Please enter $fieldName';
+  }
+  final number = allowDecimal 
+      ? double.tryParse(value)
+      : int.tryParse(value)?.toDouble();
+  if (number == null) {
+    return 'Please enter a valid number';
+  }
+  if (number <= 0) {
+    return '$fieldName must be greater than 0';
+  }
+  return null;
   }
 
   Future<void> _submitForm(BuildContext context) async {

@@ -10,6 +10,7 @@ import 'screens/auth_screen.dart';
 import 'screens/sell_coin_screen.dart';
 import 'services/auth_service.dart';
 import 'models/product_catalog_state.dart';
+import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
           '/cart': (context) => CartScreen(),
           '/request': (context) => RequestCoinScreen(),
           '/sell': (context) => SellCoinScreen(),
+          '/profile': (context) => ProfileScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),
