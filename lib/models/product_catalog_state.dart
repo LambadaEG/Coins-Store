@@ -1,76 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'product.dart';
 
 class ProductCatalogState with ChangeNotifier {
-  List<Product> products = [
-    Product(
-      name: '٥ مليم حسين كامل',
-      price: 90,
-      images: [
-        'https://i.postimg.cc/NjDGyMn8/4.jpg',
-        'https://i.postimg.cc/65spgFRZ/3.jpg',
-      ],
-      country: 'Egypt',
-      year: 1916,
-      value: 5,
-      seller: 'Jimmy',
-      inStock: 5,
-    ),
-    Product(
-      name: '١ مليم فاروق',
-      price: 65,
-      images: [
-        'https://i.postimg.cc/Z54KK3wK/6.jpg',
-        'https://i.postimg.cc/HsQkg34h/5.jpg',
-      ],
-      country: 'Egypt',
-      year: 1947,
-      value: 1,
-      seller: 'Jimmy',
-      inStock: 3,
-    ),
-    Product(
-      name: '١ مليم فاروق',
-      price: 75,
-      images: [
-        'https://i.postimg.cc/CBfDXpX0/1.jpg',
-        'https://i.postimg.cc/5yjmLZPn/2.jpg',
-      ],
-      country: 'Egypt',
-      year: 1938,
-      value: 1,
-      seller: 'Jimmy',
-      inStock: 10,
-    ),
-    Product(
-      name: '٢ مليم فؤاد',
-      price: 45,
-      images: [
-        'https://i.postimg.cc/15YJycmD/8.jpg',
-        'https://i.postimg.cc/59gsRWD7/7.jpg',
-      ],
-      country: 'Egypt',
-      year: 1929,
-      value: 2,
-      seller: 'Jimmy',
-      inStock: 2,
-    ),
-    Product(
-      name: '١٠ سنت',
-      price: 15,
-      images: [
-        'https://i.postimg.cc/261CKNxP/9.jpg',
-        'https://i.postimg.cc/Px0dGV3N/10.jpg',
-      ],
-      country: 'Zimbabwe',
-      year: 1987,
-      value: 10,
-      seller: 'Jimmy',
-      inStock: 2,
-    ),
-  ];
-
+  List<Product> products = [];
   List<Product> cart = [];
+  bool isLoading = false;
+  String? error;
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> fetchProducts() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      final snapshot = await _firestore.collection('products').get();
+      
+      products = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Product(
+          id: doc.id,
+          name: data['name']?.toString() ?? 'Unnamed Product',
+          price: _safeParseDouble(data['price']),
+          images: List<String>.from(data['images'] ?? []),
+          country: data['country']?.toString() ?? 'Unknown',
+          year: _safeParseInt(data['year']),
+          value: _safeParseDouble(data['value']),
+          sellerId: data['sellerId'] as String? ?? '',
+          sellerName: data['sellerName']?.toString() ?? 'Unknown',
+          sellerPhone: data['sellerPhone']?.toString() ?? 'Unknown',
+          sellerEmail: data['sellerEmail']?.toString() ?? 'Unknown',
+          inStock: _safeParseInt(data['inStock']),
+        );
+      }).toList();
+
+      error = null;
+    } catch (e) {
+      error = 'Failed to load products: ${e.toString()}';
+      debugPrint(error);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  double _safeParseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  int _safeParseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
 
   void addToCart(Product product) {
     if (product.inStock > 0) {
@@ -81,6 +70,11 @@ class ProductCatalogState with ChangeNotifier {
 
   void removeFromCart(Product product) {
     cart.remove(product);
+      notifyListeners();
+  }
+
+  void clearCart() {
+    cart.clear();
     notifyListeners();
   }
 }

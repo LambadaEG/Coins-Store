@@ -7,6 +7,7 @@ import 'screens/request_coin_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/product_catalog_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/sell_coin_screen.dart';
 import 'services/auth_service.dart';
 import 'models/product_catalog_state.dart';
 
@@ -44,8 +45,9 @@ class MyApp extends StatelessWidget {
         home: AuthWrapper(),
         routes: {
           '/catalog': (context) => ProductCatalogScreen(),
-          '/cart': (context) => CartScreen(),  // Simplified since CartScreen now uses Provider directly
+          '/cart': (context) => CartScreen(),
           '/request': (context) => RequestCoinScreen(),
+          '/sell': (context) => SellCoinScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),
@@ -59,16 +61,24 @@ class AuthWrapper extends StatelessWidget {
     final authService = Provider.of<AuthService>(context);
     
     return StreamBuilder<User?>(
-      stream: authService.user,
+      stream: authService.authStateChanges,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          return snapshot.hasData ? ProductCatalogScreen() : AuthScreen();
+        // Show loading indicator while checking auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+
+        // If user is logged in, go to catalog
+        if (snapshot.hasData) {
+          return ProductCatalogScreen();
+        }
+        
+        // Otherwise show auth screen
+        return AuthScreen();
       },
     );
   }
