@@ -15,10 +15,11 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('users')
+                .doc(userId)
+                .snapshots(),
         builder: (context, userSnapshot) {
           if (!userSnapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -37,9 +38,7 @@ class ProfileScreen extends StatelessWidget {
                 subtitle: Text(userData['email']?.toString() ?? 'No Email'),
               ),
               const Divider(),
-              Expanded(
-                child: _SellerProductsList(userId: userId!),
-              ),
+              Expanded(child: _SellerProductsList(userId: userId!)),
             ],
           );
         },
@@ -65,10 +64,11 @@ class _SellerProductsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('products')
-          .where('sellerId', isEqualTo: userId)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('products')
+              .where('sellerId', isEqualTo: userId)
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -78,24 +78,25 @@ class _SellerProductsList extends StatelessWidget {
           return const Center(child: Text('No products listed yet'));
         }
 
-        final products = snapshot.data!.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          
-          return Product(
-            id: doc.id,
-            name: data['name']?.toString() ?? 'Unnamed Product',
-            price: _safeParseNumber(data['price']).toDouble(),
-            images: List<String>.from(data['images'] ?? []),
-            country: data['country']?.toString() ?? 'Unknown',
-            year: _safeParseNumber(data['year']).toInt(),
-            value: _safeParseNumber(data['value']).toDouble(),
-            sellerId: data['sellerId']?.toString() ?? '',
-            sellerName: data['sellerName']?.toString() ?? 'Unknown Seller',
-            sellerPhone: data['sellerPhone']?.toString() ?? 'N/A',
-            sellerEmail: data['sellerEmail']?.toString() ?? 'N/A',
-            inStock: _safeParseNumber(data['inStock']).toInt(),
-          );
-        }).toList();
+        final products =
+            snapshot.data!.docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+
+              return Product(
+                id: doc.id,
+                name: data['name']?.toString() ?? 'Unnamed Product',
+                price: _safeParseNumber(data['price']).toDouble(),
+                images: List<String>.from(data['images'] ?? []),
+                country: data['country']?.toString() ?? 'Unknown',
+                year: _safeParseNumber(data['year']).toInt(),
+                value: _safeParseNumber(data['value']).toDouble(),
+                sellerId: data['sellerId']?.toString() ?? '',
+                sellerName: data['sellerName']?.toString() ?? 'Unknown Seller',
+                sellerPhone: data['sellerPhone']?.toString() ?? 'N/A',
+                sellerEmail: data['sellerEmail']?.toString() ?? 'N/A',
+                inStock: _safeParseNumber(data['inStock']).toInt(),
+              );
+            }).toList();
 
         return ListView.builder(
           itemCount: products.length,
@@ -125,12 +126,13 @@ class ProductListItem extends StatelessWidget {
         children: [
           IconButton(
             icon: Icon(Icons.edit),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SellCoinScreen(editingProduct: product),
-              ),
-            ),
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SellCoinScreen(editingProduct: product),
+                  ),
+                ),
           ),
           IconButton(
             icon: Icon(Icons.delete, color: Colors.red),
@@ -144,50 +146,54 @@ class ProductListItem extends StatelessWidget {
   void _confirmDelete(BuildContext context, String productId) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Confirm Delete'),
-        content: Text('Are you sure you want to delete this product?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel'),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text('Confirm Delete'),
+            content: Text('Are you sure you want to delete this product?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    // Perform deletion
+                    await FirebaseFirestore.instance
+                        .collection('products')
+                        .doc(productId)
+                        .delete();
+
+                    // Close dialog only once
+                    if (Navigator.canPop(ctx)) {
+                      Navigator.pop(ctx);
+                    }
+
+                    // Refresh product list
+                    if (context.mounted) {
+                      Provider.of<ProductCatalogState>(
+                        context,
+                        listen: false,
+                      ).fetchProducts();
+                    }
+                  } catch (e) {
+                    // Handle errors and ensure dialog closes
+                    if (Navigator.canPop(ctx)) {
+                      Navigator.pop(ctx);
+                    }
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to delete: ${e.toString()}'),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () async {
-              try {
-                // Perform deletion
-                await FirebaseFirestore.instance
-                    .collection('products')
-                    .doc(productId)
-                    .delete();
-
-                // Close dialog only once
-                if (Navigator.canPop(ctx)) {
-                  Navigator.pop(ctx);
-                }
-
-                // Refresh product list
-                if (context.mounted) {
-                  Provider.of<ProductCatalogState>(context, listen: false)
-                      .fetchProducts();
-                }
-
-              } catch (e) {
-                // Handle errors and ensure dialog closes
-                if (Navigator.canPop(ctx)) {
-                  Navigator.pop(ctx);
-                }
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete: ${e.toString()}')),
-                  );
-                }
-              }
-            },
-            child: Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 }

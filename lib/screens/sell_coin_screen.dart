@@ -12,6 +12,7 @@ import 'package:project_1/models/product.dart';
 class SellCoinScreen extends StatefulWidget {
   final Product? editingProduct;
   const SellCoinScreen({super.key, this.editingProduct});
+
   @override
   _SellCoinScreenState createState() => _SellCoinScreenState();
 }
@@ -28,12 +29,13 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   
   File? _coinFaceImage;
   File? _coinBackImage;
+  String? _existingFaceUrl;
+  String? _existingBackUrl;
   bool _isUploading = false;
   String? _errorMessage;
   String? _selectedCountry;
 
   final String _imgbbApiKey = '90fd9d602c79c4bc285c8124ad0b00ea';
-
   final List<String> _countries = [
     'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola',
     'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',
@@ -76,6 +78,21 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   void initState() {
     super.initState();
     _loadSellerInfo();
+    _initializeFormWithProduct();
+  }
+
+  void _initializeFormWithProduct() {
+    if (widget.editingProduct != null) {
+      final p = widget.editingProduct!;
+      _nameController.text = p.name;
+      _priceController.text = p.price.toString();
+      _valueController.text = p.value.toString();
+      _inStockController.text = p.inStock.toString();
+      _yearController.text = p.year.toString();
+      _selectedCountry = p.country;
+      _existingFaceUrl = p.images[0];
+      _existingBackUrl = p.images[1];
+    }
   }
 
   Future<void> _loadSellerInfo() async {
@@ -118,32 +135,28 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
       setState(() {
         if (isFace) {
           _coinFaceImage = File(pickedFile.path);
+          _existingFaceUrl = null;
         } else {
           _coinBackImage = File(pickedFile.path);
+          _existingBackUrl = null;
         }
       });
     }
   }
 
   String? _validateNumber(String? value, String fieldName, {bool allowDecimal = true}) {
-  if (value == null || value.isEmpty) {
-    return 'Please enter $fieldName';
-  }
-  final number = allowDecimal 
-      ? double.tryParse(value)
-      : int.tryParse(value)?.toDouble();
-  if (number == null) {
-    return 'Please enter a valid number';
-  }
-  if (number <= 0) {
-    return '$fieldName must be greater than 0';
-  }
-  return null;
+    if (value == null || value.isEmpty) return 'Required';
+    final number = allowDecimal 
+        ? double.tryParse(value)
+        : int.tryParse(value)?.toDouble();
+    return number == null ? 'Invalid number' : null;
   }
 
   Future<void> _submitForm(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
-    if (_coinFaceImage == null || _coinBackImage == null) {
+    
+    if (widget.editingProduct == null && 
+        (_coinFaceImage == null || _coinBackImage == null)) {
       setState(() => _errorMessage = 'Please upload both coin images');
       return;
     }
@@ -154,21 +167,20 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     });
 
     try {
-      final faceUrl = await _uploadImageToImgBB(_coinFaceImage!);
-      final backUrl = await _uploadImageToImgBB(_coinBackImage!);
+      String? faceUrl = _existingFaceUrl;
+      String? backUrl = _existingBackUrl;
 
-      if (faceUrl == null || backUrl == null) {
-        throw Exception('Image upload failed');
+      if (_coinFaceImage != null) {
+        faceUrl = await _uploadImageToImgBB(_coinFaceImage!);
+      }
+      if (_coinBackImage != null) {
+        backUrl = await _uploadImageToImgBB(_coinBackImage!);
       }
 
       final auth = FirebaseAuth.instance;
       final catalogState = Provider.of<ProductCatalogState>(context, listen: false);
 
-      if (_sellerNameController.text.isEmpty || _sellerPhoneController.text.isEmpty) {
-        throw Exception('Seller information is incomplete');
-      }
-
-      await FirebaseFirestore.instance.collection('products').add({
+      final productData = {
         'name': _nameController.text,
         'price': double.parse(_priceController.text),
         'value': double.parse(_valueController.text),
@@ -176,12 +188,21 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
         'country': _selectedCountry,
         'year': int.parse(_yearController.text),
         'images': [faceUrl, backUrl],
-        'createdAt': FieldValue.serverTimestamp(),
-        'sellerId': auth.currentUser?.uid,
         'sellerName': _sellerNameController.text,
         'sellerPhone': _sellerPhoneController.text,
         'sellerEmail': auth.currentUser?.email,
-      });
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      if (widget.editingProduct != null) {
+        await FirebaseFirestore.instance
+            .collection('products')
+            .doc(widget.editingProduct!.id)
+            .update(productData);
+      } else {
+        productData['sellerId'] = auth.currentUser?.uid;
+        await FirebaseFirestore.instance.collection('products').add(productData);
+      }
 
       if (auth.currentUser != null) {
         await FirebaseFirestore.instance
@@ -194,21 +215,21 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
             }, SetOptions(merge: true));
       }
 
-      Navigator.pop(context);
-      catalogState.fetchProducts();
+      if (context.mounted) {
+        Navigator.pop(context);
+        catalogState.fetchProducts();
+      }
     } catch (e) {
       setState(() => _errorMessage = 'Error: ${e.toString()}');
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Sell Your Coin'),
-      ),
+      appBar: AppBar(title: Text(widget.editingProduct != null ? 'Edit Coin' : 'Sell Your Coin')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -228,39 +249,43 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildImagePreview(_coinFaceImage, 'Coin Face', () => _pickImage(true)),
-                    _buildImagePreview(_coinBackImage, 'Coin Back', () => _pickImage(false)),
+                    _buildImagePreview(true),
+                    _buildImagePreview(false),
                   ],
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
 
                 TextFormField(
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: 'Coin Name'),
+                  decoration: const InputDecoration(labelText: 'Coin Name'),
                   validator: (value) => value!.isEmpty ? 'Required' : null,
                 ),
+                const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _priceController,
-                  decoration: InputDecoration(labelText: 'Price (EGP)'),
+                  decoration: const InputDecoration(labelText: 'Price (EGP)'),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   validator: (value) => _validateNumber(value, 'Price'),
                 ),
+                const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _valueController,
-                  decoration: InputDecoration(labelText: 'Original Value'),
+                  decoration: const InputDecoration(labelText: 'Original Value'),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   validator: (value) => _validateNumber(value, 'Value'),
                 ),
+                const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _inStockController,
-                  decoration: InputDecoration(labelText: 'Quantity Available'),
+                  decoration: const InputDecoration(labelText: 'Quantity Available'),
                   keyboardType: TextInputType.number,
                   validator: (value) => _validateNumber(value, 'Quantity', allowDecimal: false),
                 ),
-                
+                const SizedBox(height: 16),
+
                 DropdownButtonFormField<String>(
                   value: _selectedCountry,
                   items: _countries.map((country) {
@@ -274,44 +299,38 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
                       _selectedCountry = value;
                     });
                   },
-                  decoration: InputDecoration(labelText: 'Country'),
+                  decoration: const InputDecoration(labelText: 'Country'),
                   validator: (value) => value == null ? 'Please select a country' : null,
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _yearController,
-                  decoration: InputDecoration(labelText: 'Year (1-2025)'),
+                  decoration: const InputDecoration(labelText: 'Year (1-2025)'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a year';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter a year';
                     final year = int.tryParse(value);
-                    if (year == null) {
-                      return 'Please enter a valid number';
-                    }
-                    if (year < 1 || year > 2025) {
-                      return 'Year must be between 1 and 2025';
-                    }
+                    if (year == null) return 'Please enter a valid number';
+                    if (year < 1 || year > 2025) return 'Year must be between 1 and 2025';
                     return null;
                   },
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 ElevatedButton(
                   onPressed: _isUploading ? null : () => _submitForm(context),
                   style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 50),
+                    minimumSize: const Size(double.infinity, 50),
                     backgroundColor: Theme.of(context).primaryColor,
-                    disabledBackgroundColor: Colors.grey,
                   ),
                   child: _isUploading
-                      ? CircularProgressIndicator(color: Colors.white)
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          'List Coin for Sale',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                          widget.editingProduct != null 
+                              ? 'Update Listing' 
+                              : 'List Coin for Sale',
+                          style: const TextStyle(color: Colors.white)),
                 ),
               ],
             ),
@@ -321,32 +340,38 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     );
   }
 
-  Widget _buildImagePreview(File? image, String label, VoidCallback onPressed) {
+  Widget _buildImagePreview(bool isFace) {
+    final currentImage = isFace ? _coinFaceImage : _coinBackImage;
+    final existingUrl = isFace ? _existingFaceUrl : _existingBackUrl;
+
     return Column(
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
+        Text(isFace ? 'Coin Face' : 'Coin Back', 
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
         GestureDetector(
-          onTap: onPressed,
+          onTap: () => _pickImage(isFace),
           child: Container(
             height: 150,
             width: 150,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: image != null
+              borderRadius: BorderRadius.circular(8)),
+            child: currentImage != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(image, fit: BoxFit.cover),
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_a_photo, size: 40),
-                      Text('Tap to upload'),
-                    ],
-                  ),
+                    child: Image.file(currentImage, fit: BoxFit.cover))
+                : existingUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(existingUrl, fit: BoxFit.cover))
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add_a_photo, size: 40),
+                          Text('Tap to upload'),
+                        ],
+                      ),
           ),
         ),
       ],
