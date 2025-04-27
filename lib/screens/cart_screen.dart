@@ -1,15 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_1/models/product_catalog_state.dart';
+import 'package:project_1/services/auth_service.dart';
+import 'package:project_1/services/notification_service.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({Key? key}) : super(key: key);
 
+  Future<String> _getUserPhone(String userId) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      return doc.data()?['phone'] ?? 'No phone provided';
+    } catch (e) {
+      return 'Error fetching phone';
+    }
+  }
+
+  Future<void> _placeOrder(BuildContext context) async {
+    final catalogState = Provider.of<ProductCatalogState>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser!;
+
+    try {
+      // Create order document
+      final orderRef = await FirebaseFirestore.instance.collection('orders').add({
+        'userId': user.uid,
+        'items': catalogState.cart.map((p) => p.id).toList(),
+        'total': catalogState.cart.fold(0.0, (sum, item) => sum + item.price), // Fixed double
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'pending',
+      });
+
+      // Create notifications for sellers
+      for (final product in catalogState.cart) {
+        final buyerPhone = await _getUserPhone(user.uid);
+        
+        await NotificationService.sendOrderNotification(
+          sellerId: product.sellerId,
+          orderId: orderRef.id,
+          productId: product.id,
+          buyerId: user.uid,
+          buyerPhone: buyerPhone, // Now properly defined
+        );
+      }
+
+      // Clear cart and show success
+      catalogState.clearCart();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Order placed successfully!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to place order: ${e.toString()}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // Rest of the build method remains the same as previous correct version
   @override
   Widget build(BuildContext context) {
     final catalogState = Provider.of<ProductCatalogState>(context, listen: true);
     final cart = catalogState.cart;
-    double total = cart.fold(0, (sum, item) => sum + item.price);
+    final total = cart.fold(0.0, (sum, item) => sum + item.price); // Fixed here too
 
     return Scaffold(
       appBar: AppBar(
@@ -167,14 +227,7 @@ class CartScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Order placed successfully!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onPressed: () => _placeOrder(context),
                     child: const Text(
                       'Place Order',
                       style: TextStyle(fontSize: 18, color: Colors.white),

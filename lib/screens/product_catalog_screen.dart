@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_1/models/product.dart';
 import 'package:project_1/models/product_catalog_state.dart';
 import 'package:project_1/services/auth_service.dart';
-import 'package:project_1/screens/profile_screen.dart'; // Add this import
+import 'package:project_1/screens/profile_screen.dart';
+import 'package:project_1/screens/notification_screen.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
+  const ProductCatalogScreen({Key? key}) : super(key: key);
+
   @override
   State<ProductCatalogScreen> createState() => _ProductCatalogScreenState();
 }
@@ -13,7 +17,6 @@ class ProductCatalogScreen extends StatefulWidget {
 class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   final Map<int, int> _currentPageIndexes = {};
   final Map<int, PageController> _pageControllers = {};
-
   String _selectedCountry = 'Any';
   String _selectedYear = 'Any';
 
@@ -41,23 +44,47 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     return cartQuantity < product.inStock;
   }
 
+  Widget _buildNotificationBadge(Stream<QuerySnapshot> stream) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
+        return count > 0
+            ? Positioned(
+                right: 0,
+                top: 0,
+                child: CircleAvatar(
+                  radius: 8,
+                  backgroundColor: Colors.red,
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                ),
+              )
+            : const SizedBox.shrink();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final catalogState = Provider.of<ProductCatalogState>(context);
     final authService = Provider.of<AuthService>(context, listen: false);
     final products = catalogState.products;
     final cart = catalogState.cart;
+    final userId = authService.currentUserId;
 
     if (catalogState.isLoading && products.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Coin Catalog')),
+        appBar: AppBar(title: const Text('EG Coin Store')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (catalogState.error != null && products.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Coin Catalog')),
+        appBar: AppBar(title: const Text('EG Coin Store')),
         body: Center(child: Text(catalogState.error!)),
       );
     }
@@ -77,19 +104,61 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Coin Catalog',
+          'EG Coin Store',
           style: TextStyle(color: Theme.of(context).colorScheme.primary),
         ),
-        leading: IconButton( // Added profile icon
-          icon: Icon(Icons.person),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ProfileScreen()),
-          ),
+        leadingWidth: 100, // Added fixed width to prevent overflow
+        leading: Row(
+          children: [
+            IconButton(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.person),
+                  if (userId != null)
+                    _buildNotificationBadge(
+                      FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .collection('notifications')
+                          .where('read', isEqualTo: false)
+                          .snapshots(),
+                    ),
+                ],
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ProfileScreen()),
+              ),
+              padding: EdgeInsets.zero,
+            ),
+            IconButton(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications),
+                  if (userId != null)
+                    _buildNotificationBadge(
+                      FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .collection('notifications')
+                          .where('read', isEqualTo: false)
+                          .snapshots(),
+                    ),
+                ],
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NotificationsScreen()),
+              ),
+              padding: EdgeInsets.zero,
+            ),
+          ],
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             onPressed: () => Navigator.pushNamed(context, '/sell'),
             tooltip: 'Sell Coin',
           ),
@@ -102,20 +171,19 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           ),
           IconButton(
             icon: Stack(
+              clipBehavior: Clip.none,
               children: [
                 const Icon(Icons.shopping_cart),
                 if (cart.isNotEmpty)
                   Positioned(
                     right: 0,
+                    top: 0,
                     child: CircleAvatar(
                       radius: 8,
                       backgroundColor: Colors.red,
                       child: Text(
                         '${cart.length}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
                       ),
                     ),
                   ),
