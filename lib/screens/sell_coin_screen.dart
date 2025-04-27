@@ -19,7 +19,6 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   final _priceController = TextEditingController();
   final _valueController = TextEditingController();
   final _inStockController = TextEditingController();
-  final _countryController = TextEditingController();
   final _yearController = TextEditingController();
   final _sellerPhoneController = TextEditingController();
   final _sellerNameController = TextEditingController();
@@ -28,8 +27,47 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   File? _coinBackImage;
   bool _isUploading = false;
   String? _errorMessage;
+  String? _selectedCountry;
 
   final String _imgbbApiKey = '90fd9d602c79c4bc285c8124ad0b00ea';
+
+  final List<String> _countries = [
+    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola',
+    'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',
+    'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados',
+    'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia',
+    'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria',
+    'Burkina Faso', 'Burundi', 'Côte d\'Ivoire', 'Cabo Verde', 'Cambodia',
+    'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile',
+    'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia',
+    'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica',
+    'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea',
+    'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland',
+    'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece',
+    'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti',
+    'Holy See', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia',
+    'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan',
+    'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan',
+    'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya',
+    'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi',
+    'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania',
+    'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia',
+    'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru',
+    'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria',
+    'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau',
+    'Palestine State', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru',
+    'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia',
+    'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines',
+    'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal',
+    'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia',
+    'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan',
+    'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland',
+    'Syria', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo',
+    'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan',
+    'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom',
+    'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Venezuela',
+    'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'
+  ];
 
   @override
   void initState() {
@@ -84,6 +122,20 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     }
   }
 
+  String? _validateNumber(String? value, String fieldName, {bool allowDecimal = true}) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter $fieldName';
+    }
+    final number = allowDecimal ? double.tryParse(value) : int.tryParse(value);
+    if (number == null) {
+      return 'Please enter a valid number';
+    }
+    if (number <= 0) {
+      return '$fieldName must be greater than 0';
+    }
+    return null;
+  }
+
   Future<void> _submitForm(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
     if (_coinFaceImage == null || _coinBackImage == null) {
@@ -107,7 +159,6 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
       final auth = FirebaseAuth.instance;
       final catalogState = Provider.of<ProductCatalogState>(context, listen: false);
 
-      // Validate seller info
       if (_sellerNameController.text.isEmpty || _sellerPhoneController.text.isEmpty) {
         throw Exception('Seller information is incomplete');
       }
@@ -117,7 +168,7 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
         'price': double.parse(_priceController.text),
         'value': double.parse(_valueController.text),
         'inStock': int.parse(_inStockController.text),
-        'country': _countryController.text,
+        'country': _selectedCountry,
         'year': int.parse(_yearController.text),
         'images': [faceUrl, backUrl],
         'createdAt': FieldValue.serverTimestamp(),
@@ -127,7 +178,6 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
         'sellerEmail': auth.currentUser?.email,
       });
 
-      // Update user document with phone and name
       if (auth.currentUser != null) {
         await FirebaseFirestore.instance
             .collection('users')
@@ -142,7 +192,7 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
       Navigator.pop(context);
       catalogState.fetchProducts();
     } catch (e) {
-      setState(() => _errorMessage = e.toString());
+      setState(() => _errorMessage = 'Error: ${e.toString()}');
     } finally {
       setState(() => _isUploading = false);
     }
@@ -184,34 +234,63 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
                   decoration: InputDecoration(labelText: 'Coin Name'),
                   validator: (value) => value!.isEmpty ? 'Required' : null,
                 ),
+
                 TextFormField(
                   controller: _priceController,
                   decoration: InputDecoration(labelText: 'Price (EGP)'),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) => _validateNumber(value, 'Price'),
                 ),
+
                 TextFormField(
                   controller: _valueController,
                   decoration: InputDecoration(labelText: 'Original Value'),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) => _validateNumber(value, 'Value'),
                 ),
+
                 TextFormField(
                   controller: _inStockController,
                   decoration: InputDecoration(labelText: 'Quantity Available'),
                   keyboardType: TextInputType.number,
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) => _validateNumber(value, 'Quantity', allowDecimal: false),
                 ),
-                TextFormField(
-                  controller: _countryController,
+                
+                DropdownButtonFormField<String>(
+                  value: _selectedCountry,
+                  items: _countries.map((country) {
+                    return DropdownMenuItem<String>(
+                      value: country,
+                      child: Text(country),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCountry = value;
+                    });
+                  },
                   decoration: InputDecoration(labelText: 'Country'),
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) => value == null ? 'Please select a country' : null,
                 ),
+                SizedBox(height: 16),
+
                 TextFormField(
                   controller: _yearController,
-                  decoration: InputDecoration(labelText: 'Year'),
+                  decoration: InputDecoration(labelText: 'Year (1-2025)'),
                   keyboardType: TextInputType.number,
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a year';
+                    }
+                    final year = int.tryParse(value);
+                    if (year == null) {
+                      return 'Please enter a valid number';
+                    }
+                    if (year < 1 || year > 2025) {
+                      return 'Year must be between 1 and 2025';
+                    }
+                    return null;
+                  },
                 ),
                 SizedBox(height: 20),
 
@@ -275,7 +354,6 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     _priceController.dispose();
     _valueController.dispose();
     _inStockController.dispose();
-    _countryController.dispose();
     _yearController.dispose();
     _sellerPhoneController.dispose();
     _sellerNameController.dispose();
