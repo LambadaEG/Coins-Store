@@ -3,7 +3,7 @@
 
     <application
         android:usesCleartextTraffic="true"
-        android:label="project_1"
+        android:label="Egypt Coins Store"
         android:icon="@mipmap/ic_launcher">
         
         <activity
