@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:project_1/models/notification_model.dart' as my_notification; // Added alias
+import 'package:project_1/models/notification_model.dart' as my_notification;
 import 'package:project_1/services/auth_service.dart';
-import 'package:project_1/screens/order_details_screen.dart'; // Added import
+import 'package:project_1/screens/order_details_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId = Provider.of<AuthService>(context).currentUserId;
 
-    // Handle null userId case
     if (userId == null) {
       return const Scaffold(
         body: Center(child: Text('Please login to view notifications')),
@@ -19,7 +18,10 @@ class NotificationsScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Notifications',style: TextStyle(color: Theme.of(context).colorScheme.primary),)),
+      appBar: AppBar(
+        title: Text('Notifications', 
+          style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -37,30 +39,58 @@ class NotificationsScreen extends StatelessWidget {
           }
 
           final notifications = snapshot.data!.docs.map((doc) {
-            return my_notification.Notification.fromFirestore(doc); // Using alias
+            return my_notification.Notification.fromFirestore(doc);
           }).toList();
 
           return ListView.builder(
             itemCount: notifications.length,
             itemBuilder: (context, index) {
               final notification = notifications[index];
-              return ListTile(
-                title: Text('New order from ${notification.buyerName}'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(notification.buyerPhone),
-                    Text(DateFormat.yMMMd().format(notification.timestamp)),
-                  ],
+              return Dismissible(
+                key: Key(notification.id), // Unique key for each notification
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.mark_as_unread),
-                  onPressed: () => _markAsRead(notification.id, userId), // userId is now non-null
+                onDismissed: (direction) => _deleteNotification(
+                  notification.id,
+                  userId,
                 ),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailsScreen(orderId: notification.orderId),
+                child: Container(
+                  color: notification.read ? Colors.grey[100] : null,
+                  child: ListTile(
+                    title: Text('New order from ${notification.buyerName}'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(notification.buyerPhone),
+                        Text(DateFormat.yMMMd().format(notification.timestamp)),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(
+                        notification.read 
+                            ? Icons.markunread
+                            : Icons.drafts,
+                        color: notification.read
+                            ? Colors.grey
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                      onPressed: () => _toggleReadStatus(
+                        notification.id, 
+                        userId,
+                        !notification.read,
+                      ),
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OrderDetailsScreen(orderId: notification.orderId),
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -71,12 +101,21 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  void _markAsRead(String notificationId, String userId) async {
+  void _toggleReadStatus(String notificationId, String userId, bool newStatus) async {
     await FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .collection('notifications')
         .doc(notificationId)
-        .update({'read': true});
+        .update({'read': newStatus});
+  }
+
+  void _deleteNotification(String notificationId, String userId) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('notifications')
+        .doc(notificationId)
+        .delete();
   }
 }
