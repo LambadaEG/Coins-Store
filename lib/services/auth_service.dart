@@ -5,34 +5,29 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Get the current user (returns null if not logged in)
   User? get currentUser => _auth.currentUser;
-
-  /// Get the current user's email (returns null if not logged in)
   String? get currentUserEmail => _auth.currentUser?.email;
-
-  /// Get the current user's ID (returns null if not logged in)
   String? get currentUserId => _auth.currentUser?.uid;
-
-  /// Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  /// Sign in with email and password
   Future<User?> signInWithEmail(String email, String password) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
+
+      if (!credential.user!.emailVerified) {
+        await _auth.signOut();
+        throw 'Please verify your email address before logging in.';
+      }
+
       return credential.user;
     } on FirebaseAuthException catch (e) {
       throw _getAuthError(e.code);
-    } catch (e) {
-      throw 'Login failed. Please try again.';
     }
   }
 
-  /// Register with email, password, name and phone
   Future<User?> signUpWithEmail({
     required String email,
     required String password,
@@ -40,13 +35,13 @@ class AuthService {
     required String phone,
   }) async {
     try {
-      // 1. Create user in Firebase Auth
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
 
-      // 2. Save additional user data in Firestore
+      await credential.user?.sendEmailVerification();
+
       await _firestore.collection('users').doc(credential.user?.uid).set({
         'name': name,
         'phone': phone,
@@ -57,53 +52,49 @@ class AuthService {
       return credential.user;
     } on FirebaseAuthException catch (e) {
       throw _getAuthError(e.code);
-    } catch (e) {
-      throw 'Registration failed. Please try again.';
     }
   }
 
-  /// Get user profile data
   Future<Map<String, dynamic>?> getUserData() async {
     if (currentUserId == null) return null;
-    
+
     final doc = await _firestore.collection('users').doc(currentUserId).get();
     return doc.data();
   }
 
-  /// Update user profile
   Future<void> updateProfile({String? name, String? phone}) async {
     if (currentUserId == null) return;
-    
+
     final data = <String, dynamic>{};
     if (name != null) data['name'] = name;
     if (phone != null) data['phone'] = phone;
-    
+
     if (data.isNotEmpty) {
-      await _firestore.collection('users').doc(currentUserId).update(data);
+      await _firestore.collection('users').doc(currentUserId!).update(data);
     }
   }
 
-  /// Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
     } on FirebaseAuthException catch (e) {
       throw _getAuthError(e.code);
-    } catch (e) {
-      throw 'Failed to send reset email. Please try again.';
     }
   }
 
-  /// Sign out
+  Future<void> sendVerificationEmail() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    } else {
+      throw 'User is already verified or not found.';
+    }
+  }
+
   Future<void> signOut() async {
-    try {
-      await _auth.signOut();
-    } catch (e) {
-      throw 'Logout failed. Please try again.';
-    }
+    await _auth.signOut();
   }
 
-  /// Helper method to translate Firebase auth error codes
   String _getAuthError(String code) {
     switch (code) {
       case 'invalid-email':

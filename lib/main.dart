@@ -6,11 +6,12 @@ import 'firebase_options.dart';
 import 'screens/request_coin_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/product_catalog_screen.dart';
-import 'screens/auth_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
 import 'screens/sell_coin_screen.dart';
+import 'screens/profile_screen.dart';
 import 'services/auth_service.dart';
 import 'models/product_catalog_state.dart';
-import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -37,9 +40,14 @@ class MyApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(
             elevation: 0,
             centerTitle: true,
+            backgroundColor: Colors.white,
             titleTextStyle: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            iconTheme: IconThemeData(
+              color: Colors.black, // ✅ icons black
             ),
           ),
         ),
@@ -50,6 +58,8 @@ class MyApp extends StatelessWidget {
           '/request': (context) => RequestCoinScreen(),
           '/sell': (context) => SellCoinScreen(),
           '/profile': (context) => ProfileScreen(),
+          '/login': (context) => LoginScreen(email: '', errorMessage: ''),
+          '/signup': (context) => SignUpScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),
@@ -58,29 +68,37 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
+  AuthWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    
+
     return StreamBuilder<User?>(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
-        // Show loading indicator while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // If user is logged in, go to catalog
         if (snapshot.hasData) {
-          return ProductCatalogScreen();
+          final user = snapshot.data;
+          if (user != null && user.emailVerified) {
+            return ProductCatalogScreen();
+          } else {
+            return LoginScreen(
+              email: user?.email ?? '',
+              errorMessage: 'Please verify your email before logging in.',
+            );
+          }
         }
-        
-        // Otherwise show auth screen
-        return AuthScreen();
+
+        return LoginScreen(
+          email: '',
+          errorMessage: '',
+        );
       },
     );
   }
