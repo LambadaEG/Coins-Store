@@ -115,15 +115,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   const Icon(Icons.person),
-                  if (userId != null)
-                    _buildNotificationBadge(
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(userId)
-                          .collection('notifications')
-                          .where('read', isEqualTo: false)
-                          .snapshots(),
-                    ),
                 ],
               ),
               onPressed: () => Navigator.push(
