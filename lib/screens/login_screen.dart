@@ -32,15 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _startCountdown() {
     setState(() {
-      _resendCountdown = 60; // 60 seconds countdown
+      _resendCountdown = 60;
     });
 
-    _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (_resendCountdown > 0) {
-        setState(() {
-          _resendCountdown--;
-        });
+        setState(() => _resendCountdown--);
       } else {
         timer.cancel();
       }
@@ -66,23 +63,19 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         setState(() {
-          _errorMessage = 'Please verify your email before logging in.';
+          _errorMessage = 'Please verify your email address before logging in.';
         });
-        _startCountdown(); // Start countdown immediately after failed login
+        _startCountdown();
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      setState(() => _errorMessage = e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _resendVerificationEmail() async {
-    if (_resendCountdown > 0) return; // Prevent sending verification if the countdown is still running
+    if (_resendCountdown > 0) return;
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -90,11 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = 'Verification email sent! Check your inbox.';
       });
-      _startCountdown(); // Restart countdown after resending email
+      _startCountdown();
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to resend: ${e.toString()}';
-      });
+      setState(() => _errorMessage = 'Failed to resend: ${e.toString()}');
     }
   }
 
@@ -104,8 +95,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _email = widget.email;
     _errorMessage = widget.errorMessage.isEmpty ? null : widget.errorMessage;
 
-    if (_errorMessage == 'Please verify your email before logging in.') {
-      _startCountdown(); // Start countdown if the message is already present
+    if (_errorMessage == 'Please verify your email address before logging in.') {
+      _startCountdown();
     }
   }
 
@@ -161,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      if (_errorMessage == 'Please verify your email before logging in.' ||
+                      if (_errorMessage == 'Please verify your email address before logging in.' ||
                           _resendCountdown > 0)
                         Column(
                           children: [

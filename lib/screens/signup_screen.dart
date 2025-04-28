@@ -39,10 +39,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => LoginScreen(
-            email: _email,
-            errorMessage: 'A verification email has been sent. Please verify before login.',
-          ),
+          builder:
+              (context) => LoginScreen(
+                email: _email,
+                errorMessage:
+                    'Please verify your email address before logging in.',
+              ),
         ),
       );
     } catch (e) {
@@ -65,46 +67,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
               children: [
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Full Name'),
-                  validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
+                  validator:
+                      (value) =>
+                          value!.isEmpty ? 'Please enter your name' : null,
                   onSaved: (value) => _name = value!.trim(),
                 ),
                 const SizedBox(height: 15),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) => value!.contains('@') ? null : 'Invalid email',
+                  validator:
+                      (value) => value!.contains('@') ? null : 'Invalid email',
                   onSaved: (value) => _email = value!.trim(),
                 ),
                 const SizedBox(height: 15),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Phone Number'),
                   keyboardType: TextInputType.phone,
-                  validator: (value) => value!.isEmpty ? 'Please enter your phone number' : null,
+                  validator:
+                      (value) =>
+                          value!.isEmpty
+                              ? 'Please enter your phone number'
+                              : null,
                   onSaved: (value) => _phone = value!.trim(),
                 ),
                 const SizedBox(height: 15),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
-                  validator: (value) => value!.length >= 6 ? null : 'Minimum 6 characters',
+                  validator:
+                      (value) =>
+                          value!.length >= 6 ? null : 'Minimum 6 characters',
                   onSaved: (value) => _password = value!,
                 ),
                 const SizedBox(height: 20),
                 if (_errorMessage != null)
-                  Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  Text(_errorMessage!, style: TextStyle(color: Colors.red)),
                 const SizedBox(height: 10),
                 _isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                        onPressed: _submit,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
-                        ),
-                        child: const Text('Sign Up'),
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
                       ),
+                      child: const Text('Sign Up'),
+                    ),
               ],
             ),
           ),
