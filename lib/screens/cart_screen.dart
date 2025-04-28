@@ -17,31 +17,66 @@ class CartScreen extends StatelessWidget {
     }
   }
 
+  Future<int> _getUserOrderedQuantity(String userId, String productId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      int orderedQuantity = 0;
+
+      for (var doc in querySnapshot.docs) {
+        final items = List.from(doc.data()['items']);
+        orderedQuantity += items.where((id) => id == productId).length;
+      }
+
+      return orderedQuantity;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   Future<void> _placeOrder(BuildContext context) async {
     final catalogState = Provider.of<ProductCatalogState>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
     final user = authService.currentUser!;
+    final cart = catalogState.cart;
 
     try {
+      // Validate stock before placing the order
+      for (final product in cart) {
+        final previouslyOrdered = await _getUserOrderedQuantity(user.uid, product.id);
+        if (previouslyOrdered + 1 > product.inStock) { // 1 because each cart item is single
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot order more of "${product.name}". In stock: ${product.inStock}, already ordered: $previouslyOrdered.'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          return; // Stop the order
+        }
+      }
+
       // Create order document
       final orderRef = await FirebaseFirestore.instance.collection('orders').add({
         'userId': user.uid,
-        'items': catalogState.cart.map((p) => p.id).toList(),
-        'total': catalogState.cart.fold(0.0, (sum, item) => sum + item.price), // Fixed double
+        'items': cart.map((p) => p.id).toList(),
+        'total': cart.fold(0.0, (sum, item) => sum + item.price),
         'timestamp': FieldValue.serverTimestamp(),
         'status': 'pending',
       });
 
       // Create notifications for sellers
-      for (final product in catalogState.cart) {
+      for (final product in cart) {
         final buyerPhone = await _getUserPhone(user.uid);
-        
+
         await NotificationService.sendOrderNotification(
           sellerId: product.sellerId,
           orderId: orderRef.id,
           productId: product.id,
           buyerId: user.uid,
-          buyerPhone: buyerPhone, // Now properly defined
+          buyerPhone: buyerPhone,
         );
       }
 
@@ -64,16 +99,15 @@ class CartScreen extends StatelessWidget {
     }
   }
 
-  // Rest of the build method remains the same as previous correct version
   @override
   Widget build(BuildContext context) {
     final catalogState = Provider.of<ProductCatalogState>(context, listen: true);
     final cart = catalogState.cart;
-    final total = cart.fold(0.0, (sum, item) => sum + item.price); // Fixed here too
+    final total = cart.fold(0.0, (sum, item) => sum + item.price);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Your Cart',style: TextStyle(color: Theme.of(context).colorScheme.primary),),
+        title: Text('Your Cart', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
         actions: [
           if (cart.isNotEmpty)
             Padding(
@@ -126,8 +160,7 @@ class CartScreen extends StatelessWidget {
                         direction: DismissDirection.endToStart,
                         onDismissed: (direction) => catalogState.removeFromCart(p),
                         child: Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           child: ListTile(
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
@@ -149,8 +182,8 @@ class CartScreen extends StatelessWidget {
                                   'In Stock: ${p.inStock}',
                                   style: TextStyle(
                                     color: p.inStock > 0 
-                                      ? Colors.green 
-                                      : Colors.red,
+                                        ? Colors.green 
+                                        : Colors.red,
                                   ),
                                 ),
                               ],
@@ -169,8 +202,7 @@ class CartScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withOpacity(0.2),
@@ -201,8 +233,9 @@ class CartScreen extends StatelessWidget {
                           const Text(
                             'Total:',
                             style: TextStyle(
-                                fontSize: 18, 
-                                fontWeight: FontWeight.bold),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Text(
                             'EGP ${total.toStringAsFixed(2)}',
