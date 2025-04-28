@@ -95,7 +95,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _email = widget.email;
     _errorMessage = widget.errorMessage.isEmpty ? null : widget.errorMessage;
 
-    if (_errorMessage == 'Please verify your email address before logging in.') {
+    if (_errorMessage ==
+        'Please verify your email address before logging in.') {
       _startCountdown();
     }
   }
@@ -112,9 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         backgroundColor: Colors.white,
-        iconTheme: IconThemeData(
-          color: Theme.of(context).primaryColor,
-        ),
+        iconTheme: IconThemeData(color: Theme.of(context).primaryColor),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -127,16 +126,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   initialValue: _email,
                   decoration: InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) =>
-                      value!.contains('@') ? null : 'Invalid email',
+                  validator:
+                      (value) => value!.contains('@') ? null : 'Invalid email',
                   onSaved: (value) => _email = value!.trim(),
                 ),
                 SizedBox(height: 15),
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Password'),
                   obscureText: true,
-                  validator: (value) =>
-                      value!.length >= 6 ? null : 'Minimum 6 characters',
+                  validator:
+                      (value) =>
+                          value!.length >= 6 ? null : 'Minimum 6 characters',
                   onSaved: (value) => _password = value!,
                 ),
                 SizedBox(height: 20),
@@ -146,13 +146,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         _errorMessage!,
                         style: TextStyle(
-                          color: _errorMessage!.startsWith('Verification')
-                              ? Colors.green
-                              : Colors.red,
+                          color:
+                              _errorMessage!.startsWith('Verification')
+                                  ? Colors.green
+                                  : Colors.red,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      if (_errorMessage == 'Please verify your email address before logging in.' ||
+                      if (_errorMessage ==
+                              'Please verify your email address before logging in.' ||
                           _resendCountdown > 0)
                         Column(
                           children: [
@@ -168,9 +170,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             TextButton(
-                              onPressed: _resendCountdown == 0
-                                  ? _resendVerificationEmail
-                                  : null,
+                              onPressed:
+                                  _resendCountdown == 0
+                                      ? _resendVerificationEmail
+                                      : null,
                               child: Text('Resend Verification Email'),
                             ),
                           ],
@@ -181,12 +184,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 _isLoading
                     ? CircularProgressIndicator()
                     : ElevatedButton(
-                        onPressed: _submit,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 50),
-                        ),
-                        child: Text('Login'),
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 50),
                       ),
+                      child: Text('Login'),
+                    ),
                 SizedBox(height: 10),
                 TextButton(
                   onPressed: () {

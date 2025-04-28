@@ -10,9 +10,7 @@ class OrderDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order Details'),
-      ),
+      appBar: AppBar(title: Text('Order Details',style: TextStyle(color: Theme.of(context).colorScheme.primary),),),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
             .collection('orders')

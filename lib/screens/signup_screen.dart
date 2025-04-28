@@ -57,7 +57,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(
+        title: Text(
+          'Sign Up',
+          style: TextStyle(
+            color: Theme.of(context).primaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Theme.of(context).primaryColor),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -113,6 +123,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       child: const Text('Sign Up'),
                     ),
+                const SizedBox(height: 15),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                  child: const Text('Already have an account? Login'),
+                ),
               ],
             ),
           ),
