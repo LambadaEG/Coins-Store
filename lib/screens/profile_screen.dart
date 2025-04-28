@@ -13,7 +13,7 @@ class ProfileScreen extends StatelessWidget {
     final userId = authService.currentUserId;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text('Profile',style: TextStyle(color: Theme.of(context).colorScheme.primary),),),
       body: StreamBuilder<DocumentSnapshot>(
         stream:
             FirebaseFirestore.instance

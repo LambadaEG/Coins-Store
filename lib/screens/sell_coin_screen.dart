@@ -229,7 +229,7 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.editingProduct != null ? 'Edit Coin' : 'Sell Your Coin')),
+      appBar: AppBar(title: Text(widget.editingProduct != null ? 'Edit Coin' : 'Sell Your Coins',style: TextStyle(color: Theme.of(context).colorScheme.primary),)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

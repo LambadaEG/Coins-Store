@@ -77,14 +77,14 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     if (catalogState.isLoading && products.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('EG Coin Store')),
+        appBar: AppBar(title: const Text('EG Coins')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (catalogState.error != null && products.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('EG Coin Store')),
+        appBar: AppBar(title: const Text('EG Coins')),
         body: Center(child: Text(catalogState.error!)),
       );
     }
@@ -104,7 +104,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'EG Coin Store',
+          'EG Coins',
           style: TextStyle(color: Theme.of(context).colorScheme.primary),
         ),
         leadingWidth: 100, // Added fixed width to prevent overflow

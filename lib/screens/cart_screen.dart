@@ -73,7 +73,7 @@ class CartScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Cart'),
+        title: Text('Your Cart',style: TextStyle(color: Theme.of(context).colorScheme.primary),),
         actions: [
           if (cart.isNotEmpty)
             Padding(
