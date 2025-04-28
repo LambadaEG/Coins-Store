@@ -35,7 +35,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   Future<void> _refreshProducts() async {
-    await Provider.of<ProductCatalogState>(context, listen: false).fetchProducts();
+    await Provider.of<ProductCatalogState>(
+      context,
+      listen: false,
+    ).fetchProducts();
   }
 
   bool _canAddToCart(Product product, List<Product> cart) {
@@ -51,17 +54,17 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
         return count > 0
             ? Positioned(
-                right: 0,
-                top: 0,
-                child: CircleAvatar(
-                  radius: 8,
-                  backgroundColor: Colors.red,
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                  ),
+              right: 0,
+              top: 0,
+              child: CircleAvatar(
+                radius: 8,
+                backgroundColor: Colors.red,
+                child: Text(
+                  '$count',
+                  style: const TextStyle(color: Colors.white, fontSize: 10),
                 ),
-              )
+              ),
+            )
             : const SizedBox.shrink();
       },
     );
@@ -90,16 +93,21 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     }
 
     final countries = products.map((p) => p.country).toSet().toList()..sort();
-    final years = products.map((p) => p.year.toString()).toSet().toList()
-      ..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
+    final years =
+        products.map((p) => p.year.toString()).toSet().toList()
+          ..sort((a, b) => int.parse(b).compareTo(int.parse(a)));
     countries.insert(0, 'Any');
     years.insert(0, 'Any');
 
-    final filteredProducts = products.where((product) {
-      final matchCountry = _selectedCountry == 'Any' || product.country == _selectedCountry;
-      final matchYear = _selectedYear == 'Any' || product.year.toString() == _selectedYear;
-      return matchCountry && matchYear;
-    }).toList();
+    final filteredProducts =
+        products.where((product) {
+          final matchCountry =
+              _selectedCountry == 'Any' || product.country == _selectedCountry;
+          final matchYear =
+              _selectedYear == 'Any' ||
+              product.year.toString() == _selectedYear;
+          return matchCountry && matchYear;
+        }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -113,14 +121,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
             IconButton(
               icon: Stack(
                 clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.person),
-                ],
+                children: [const Icon(Icons.person)],
               ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ProfileScreen()),
-              ),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ProfileScreen()),
+                  ),
               padding: EdgeInsets.zero,
             ),
             IconButton(
@@ -139,10 +146,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     ),
                 ],
               ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => NotificationsScreen()),
-              ),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => NotificationsScreen()),
+                  ),
               padding: EdgeInsets.zero,
             ),
           ],
@@ -156,7 +164,32 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await authService.signOut();
+              final shouldLogout = await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Logout'),
+                      content: const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text(
+                            'Logout',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+              );
+
+              if (shouldLogout == true) {
+                await authService.signOut();
+              }
             },
             tooltip: 'Sign Out',
           ),
@@ -174,7 +207,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       backgroundColor: Colors.red,
                       child: Text(
                         '${cart.length}',
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ),
@@ -195,14 +231,15 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedCountry,
-                      items: countries
-                          .map(
-                            (country) => DropdownMenuItem(
-                              value: country,
-                              child: Text(country),
-                            ),
-                          )
-                          .toList(),
+                      items:
+                          countries
+                              .map(
+                                (country) => DropdownMenuItem(
+                                  value: country,
+                                  child: Text(country),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (value) {
                         setState(() {
                           _selectedCountry = value!;
@@ -215,14 +252,15 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedYear,
-                      items: years
-                          .map(
-                            (year) => DropdownMenuItem(
-                              value: year,
-                              child: Text(year),
-                            ),
-                          )
-                          .toList(),
+                      items:
+                          years
+                              .map(
+                                (year) => DropdownMenuItem(
+                                  value: year,
+                                  child: Text(year),
+                                ),
+                              )
+                              .toList(),
                       onChanged: (value) {
                         setState(() {
                           _selectedYear = value!;
@@ -238,14 +276,16 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final screenWidth = constraints.maxWidth;
-                  final crossAxisCount = screenWidth > 600
-                      ? 4
-                      : screenWidth > 400
+                  final crossAxisCount =
+                      screenWidth > 600
+                          ? 4
+                          : screenWidth > 400
                           ? 3
                           : 2;
                   final spacing = 10.0;
                   final totalSpacing = spacing * (crossAxisCount - 1);
-                  final itemWidth = (screenWidth - totalSpacing - 20) / crossAxisCount;
+                  final itemWidth =
+                      (screenWidth - totalSpacing - 20) / crossAxisCount;
                   final itemHeight = 330.0;
                   final aspectRatio = itemWidth / itemHeight;
 
@@ -260,8 +300,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                     ),
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
-                      _currentPageIndexes[index] = _currentPageIndexes[index] ?? 0;
-                      _pageControllers[index] = _pageControllers[index] ?? PageController();
+                      _currentPageIndexes[index] =
+                          _currentPageIndexes[index] ?? 0;
+                      _pageControllers[index] =
+                          _pageControllers[index] ?? PageController();
 
                       final canAdd = _canAddToCart(product, cart);
 
@@ -287,22 +329,34 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                           alignment: Alignment.bottomCenter,
                                           children: [
                                             PageView.builder(
-                                              controller: _pageControllers[index]!,
+                                              controller:
+                                                  _pageControllers[index]!,
                                               itemCount: product.images.length,
                                               onPageChanged: (page) {
                                                 setState(() {
-                                                  _currentPageIndexes[index] = page;
+                                                  _currentPageIndexes[index] =
+                                                      page;
                                                 });
                                               },
-                                              itemBuilder: (context, imageIndex) {
+                                              itemBuilder: (
+                                                context,
+                                                imageIndex,
+                                              ) {
                                                 return Image.network(
                                                   product.images[imageIndex],
                                                   fit: BoxFit.contain,
-                                                  cacheWidth: (itemWidth *
-                                                          MediaQuery.of(context).devicePixelRatio)
-                                                      .round(),
-                                                  errorBuilder: (context, error, _) =>
-                                                      const Icon(
+                                                  cacheWidth:
+                                                      (itemWidth *
+                                                              MediaQuery.of(
+                                                                context,
+                                                              ).devicePixelRatio)
+                                                          .round(),
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        _,
+                                                      ) => const Icon(
                                                         Icons.monetization_on,
                                                         size: 60,
                                                       ),
@@ -311,29 +365,40 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                             ),
                                             if (product.images.length > 1)
                                               Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
                                                 children: List.generate(
                                                   product.images.length,
                                                   (dotIndex) => GestureDetector(
                                                     onTap: () {
-                                                      _pageControllers[index]!.animateToPage(
-                                                        dotIndex,
-                                                        duration: const Duration(milliseconds: 300),
-                                                        curve: Curves.easeInOut,
-                                                      );
+                                                      _pageControllers[index]!
+                                                          .animateToPage(
+                                                            dotIndex,
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      300,
+                                                                ),
+                                                            curve:
+                                                                Curves
+                                                                    .easeInOut,
+                                                          );
                                                     },
                                                     child: Container(
-                                                      margin: const EdgeInsets.symmetric(
-                                                        horizontal: 2,
-                                                        vertical: 6,
-                                                      ),
+                                                      margin:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 2,
+                                                            vertical: 6,
+                                                          ),
                                                       width: 6,
                                                       height: 6,
                                                       decoration: BoxDecoration(
                                                         shape: BoxShape.circle,
-                                                        color: _currentPageIndexes[index] == dotIndex
-                                                            ? Colors.blue
-                                                            : Colors.grey,
+                                                        color:
+                                                            _currentPageIndexes[index] ==
+                                                                    dotIndex
+                                                                ? Colors.blue
+                                                                : Colors.grey,
                                                       ),
                                                     ),
                                                   ),
@@ -355,7 +420,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                       product.formattedPrice,
-                                      style: const TextStyle(color: Colors.green),
+                                      style: const TextStyle(
+                                        color: Colors.green,
+                                      ),
                                     ),
                                     Text(
                                       '${product.country}, ${product.year}',
@@ -369,7 +436,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                       'Stock: ${product.inStock}',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: product.inStock > 0 ? Colors.green : Colors.red,
+                                        color:
+                                            product.inStock > 0
+                                                ? Colors.green
+                                                : Colors.red,
                                       ),
                                     ),
                                   ],
@@ -380,20 +450,24 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                           const SizedBox(height: 0),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: canAdd ? Colors.blue[800] : Colors.grey,
+                              backgroundColor:
+                                  canAdd ? Colors.blue[800] : Colors.grey,
                               minimumSize: const Size(double.infinity, 40),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
-                            onPressed: canAdd ? () => catalogState.addToCart(product) : null,
+                            onPressed:
+                                canAdd
+                                    ? () => catalogState.addToCart(product)
+                                    : null,
                             child: Text(
                               canAdd
                                   ? 'Add to Cart'
                                   : product.inStock > 0
-                                      ? 'Max Reached'
-                                      : 'Out of Stock',
+                                  ? 'Max Reached'
+                                  : 'Out of Stock',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.white,
