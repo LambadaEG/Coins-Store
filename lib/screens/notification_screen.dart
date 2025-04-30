@@ -19,8 +19,10 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Notifications', 
-          style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+        title: Text(
+          'Notifications',
+          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -72,15 +74,15 @@ class NotificationsScreen extends StatelessWidget {
                     ),
                     trailing: IconButton(
                       icon: Icon(
-                        notification.read 
-                            ? Icons.markunread
-                            : Icons.drafts,
+                        notification.read
+                            ? Icons.drafts
+                            : Icons.markunread,
                         color: notification.read
                             ? Colors.grey
                             : Theme.of(context).colorScheme.primary,
                       ),
                       onPressed: () => _toggleReadStatus(
-                        notification.id, 
+                        notification.id,
                         userId,
                         !notification.read,
                       ),
@@ -88,7 +90,8 @@ class NotificationsScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => OrderDetailsScreen(orderId: notification.orderId),
+                        builder: (_) =>
+                            OrderDetailsScreen(orderId: notification.orderId),
                       ),
                     ),
                   ),

@@ -27,4 +27,15 @@ class NotificationService {
           'read': false,
         });
   }
+
+  static Future<void> deleteOrderNotifications(String orderId) async {
+    final notifications = await FirebaseFirestore.instance
+        .collectionGroup('notifications')
+        .where('orderId', isEqualTo: orderId)
+        .get();
+
+    for (final doc in notifications.docs) {
+      await doc.reference.delete();
+    }
+  }
 }
