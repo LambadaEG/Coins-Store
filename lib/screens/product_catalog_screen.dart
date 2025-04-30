@@ -393,7 +393,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                       product.name,
-                                      maxLines: 2,
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
