@@ -6,7 +6,6 @@ import 'package:project_1/models/product.dart';
 import 'package:project_1/models/product_catalog_state.dart';
 import 'package:project_1/services/auth_service.dart';
 import 'package:project_1/screens/sell_coin_screen.dart';
-import 'package:project_1/services/notification_service.dart';
 import 'package:project_1/screens/order_details_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -186,8 +185,6 @@ class _UserOrdersList extends StatelessWidget {
                     .collection('orders')
                     .doc(orderId)
                     .delete();
-
-                await NotificationService.deleteOrderNotifications(orderId);
 
                 Navigator.pop(ctx, true);
               } catch (e) {

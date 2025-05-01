@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';  // Import Firebase Messaging
 import 'firebase_options.dart';
 import 'screens/request_coin_screen.dart';
 import 'screens/cart_screen.dart';
@@ -18,7 +19,36 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Request permission for push notifications
+  await FirebaseMessaging.instance.requestPermission();
+  
+  // Get the device token for push notifications
+  String? token = await FirebaseMessaging.instance.getToken();
+  if (token != null) {
+    // Use the token (For example: send it to your server)
+    await sendTokenToServer(token);
+  }
+
+  // Setup the background message handler
+  FirebaseMessaging.onBackgroundMessage(backgroundMessageHandler);
+
   runApp(MyApp());
+}
+
+// Function to send the token to your server or save it for later use
+Future<void> sendTokenToServer(String token) async {
+  // You can send the token to your server using an API request
+  // For example:
+  // final response = await http.post('https://yourserver.com/api/saveToken', body: {'token': token});
+  // Handle the response as needed
+
+  // Placeholder for token handling logic
+  print("Token sent to server: $token");
+}
+
+Future<void> backgroundMessageHandler(RemoteMessage message) async {
+  // Handle background message (you can customize this based on your needs)
 }
 
 class MyApp extends StatelessWidget {

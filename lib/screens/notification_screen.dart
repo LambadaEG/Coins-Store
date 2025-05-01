@@ -49,7 +49,7 @@ class NotificationsScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final notification = notifications[index];
               return Dismissible(
-                key: Key(notification.id), // Unique key for each notification
+                key: Key(notification.id),
                 direction: DismissDirection.endToStart,
                 background: Container(
                   color: Colors.red,
@@ -90,8 +90,9 @@ class NotificationsScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            OrderDetailsScreen(orderId: notification.orderId),
+                        builder: (_) => OrderDetailsScreen(
+                          orderId: notification.orderId,
+                        ),
                       ),
                     ),
                   ),
