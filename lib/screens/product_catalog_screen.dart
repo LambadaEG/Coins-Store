@@ -7,7 +7,8 @@ import 'package:project_1/models/product_catalog_state.dart';
 import 'package:project_1/services/auth_service.dart';
 import 'package:project_1/screens/profile_screen.dart';
 import 'package:project_1/screens/notification_screen.dart';
-import 'package:project_1/screens/login_screen.dart'; // Make sure to import your login screen
+import 'package:project_1/screens/login_screen.dart';
+import 'package:project_1/screens/product_details_screen.dart'; // Added import
 
 class ProductCatalogScreen extends StatefulWidget {
   const ProductCatalogScreen({Key? key}) : super(key: key);
@@ -98,7 +99,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
     if (shouldLogout == true) {
       await authService.signOut();
-      // Navigate to login screen and clear all previous routes
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
@@ -309,121 +309,131 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: Card(
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    AspectRatio(
-                                      aspectRatio: 1,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Stack(
-                                          alignment: Alignment.bottomCenter,
-                                          children: [
-                                            PageView.builder(
-                                              controller: _pageControllers[index]!,
-                                              itemCount: product.images.length,
-                                              onPageChanged: (page) {
-                                                setState(() {
-                                                  _currentPageIndexes[index] = page;
-                                                });
-                                              },
-                                              itemBuilder: (context, imageIndex) {
-                                                return Image.network(
-                                                  product.images[imageIndex],
-                                                  fit: BoxFit.contain,
-                                                  cacheWidth: (itemWidth *
-                                                          MediaQuery.of(context)
-                                                              .devicePixelRatio)
-                                                      .round(),
-                                                  errorBuilder: (context, error, _) =>
-                                                      const Icon(
-                                                    Icons.monetization_on,
-                                                    size: 60,
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                            if (product.images.length > 1)
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: List.generate(
-                                                  product.images.length,
-                                                  (dotIndex) => GestureDetector(
-                                                    onTap: () {
-                                                      _pageControllers[index]!
-                                                          .animateToPage(
-                                                        dotIndex,
-                                                        duration: const Duration(
-                                                            milliseconds: 300),
-                                                        curve: Curves.easeInOut,
-                                                      );
-                                                    },
-                                                    child: Container(
-                                                      margin:
-                                                          const EdgeInsets.symmetric(
-                                                        horizontal: 2,
-                                                        vertical: 6,
-                                                      ),
-                                                      width: 6,
-                                                      height: 6,
-                                                      decoration: BoxDecoration(
-                                                        shape: BoxShape.circle,
-                                                        color: _currentPageIndexes[
-                                                                    index] ==
-                                                                dotIndex
-                                                            ? Colors.blue
-                                                            : Colors.grey,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProductDetailsScreen(product: product),
+                                  ),
+                                );
+                              },
+                              child: Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      AspectRatio(
+                                        aspectRatio: 1,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Stack(
+                                            alignment: Alignment.bottomCenter,
+                                            children: [
+                                              PageView.builder(
+                                                controller: _pageControllers[index]!,
+                                                itemCount: product.images.length,
+                                                onPageChanged: (page) {
+                                                  setState(() {
+                                                    _currentPageIndexes[index] = page;
+                                                  });
+                                                },
+                                                itemBuilder: (context, imageIndex) {
+                                                  return Image.network(
+                                                    product.images[imageIndex],
+                                                    fit: BoxFit.contain,
+                                                    cacheWidth: (itemWidth *
+                                                            MediaQuery.of(context)
+                                                                .devicePixelRatio)
+                                                        .round(),
+                                                    errorBuilder: (context, error, _) =>
+                                                        const Icon(
+                                                      Icons.monetization_on,
+                                                      size: 60,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                              if (product.images.length > 1)
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: List.generate(
+                                                    product.images.length,
+                                                    (dotIndex) => GestureDetector(
+                                                      onTap: () {
+                                                        _pageControllers[index]!
+                                                            .animateToPage(
+                                                          dotIndex,
+                                                          duration: const Duration(
+                                                              milliseconds: 300),
+                                                          curve: Curves.easeInOut,
+                                                        );
+                                                      },
+                                                      child: Container(
+                                                        margin:
+                                                            const EdgeInsets.symmetric(
+                                                          horizontal: 2,
+                                                          vertical: 6,
+                                                        ),
+                                                        width: 6,
+                                                        height: 6,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: _currentPageIndexes[
+                                                                      index] ==
+                                                                  dotIndex
+                                                              ? Colors.blue
+                                                              : Colors.grey,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      product.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        product.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      product.formattedPrice,
-                                      style: const TextStyle(
-                                        color: Colors.green,
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        product.formattedPrice,
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      '${product.country}, ${product.year}',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                    Text(
-                                      'Seller: ${product.sellerPhone}',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                    Text(
-                                      'Stock: ${product.inStock}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: product.inStock > 0
-                                            ? Colors.green
-                                            : Colors.red,
+                                      Text(
+                                        '${product.country}, ${product.year}',
+                                        style: const TextStyle(fontSize: 12),
                                       ),
-                                    ),
-                                  ],
+                                      Text(
+                                        'Seller: ${product.sellerPhone}',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      Text(
+                                        'Stock: ${product.inStock}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: product.inStock > 0
+                                              ? Colors.green
+                                              : Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
