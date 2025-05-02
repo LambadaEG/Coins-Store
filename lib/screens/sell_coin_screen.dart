@@ -26,12 +26,13 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
   final _yearController = TextEditingController();
   final _sellerPhoneController = TextEditingController();
   final _sellerNameController = TextEditingController();
-  
+
   File? _coinFaceImage;
   File? _coinBackImage;
   String? _existingFaceUrl;
   String? _existingBackUrl;
   bool _isUploading = false;
+  bool _isUploadingImages = false;
   String? _errorMessage;
   String? _selectedCountry;
 
@@ -72,7 +73,7 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom',
     'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Venezuela',
     'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'
-  ];
+  ]; // Keep your country list here
 
   @override
   void initState() {
@@ -102,7 +103,6 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
           .collection('users')
           .doc(auth.currentUser!.uid)
           .get();
-      
       if (userDoc.exists) {
         setState(() {
           _sellerNameController.text = userDoc.data()?['name'] ?? '';
@@ -114,6 +114,7 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
 
   Future<String?> _uploadImageToImgBB(File image) async {
     try {
+      setState(() => _isUploadingImages = true);
       final url = Uri.parse('https://api.imgbb.com/1/upload?key=$_imgbbApiKey');
       final request = http.MultipartRequest('POST', url)
         ..files.add(await http.MultipartFile.fromPath('image', image.path));
@@ -124,12 +125,14 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     } catch (e) {
       setState(() => _errorMessage = 'Failed to upload image: ${e.toString()}');
       return null;
+    } finally {
+      setState(() => _isUploadingImages = false);
     }
   }
 
-  Future<void> _pickImage(bool isFace) async {
+  Future<void> _pickImage(bool isFace, ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
       setState(() {
@@ -144,20 +147,51 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     }
   }
 
+  void _showImageSourcePicker(bool isFace) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Pick from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(isFace, ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(isFace, ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String? _validateNumber(String? value, String fieldName, {bool allowDecimal = true}) {
     if (value == null || value.isEmpty) return 'Required';
-    final number = allowDecimal 
+    final number = allowDecimal
         ? double.tryParse(value)
         : int.tryParse(value)?.toDouble();
     return number == null ? 'Invalid number' : null;
   }
 
   Future<void> _submitForm(BuildContext context) async {
+    if (_isUploadingImages) return;
     if (!_formKey.currentState!.validate()) return;
-    
-    if (widget.editingProduct == null && 
-        (_coinFaceImage == null || _coinBackImage == null)) {
-      setState(() => _errorMessage = 'Please upload both coin images');
+
+    final hasFace = _coinFaceImage != null || _existingFaceUrl != null;
+    final hasBack = _coinBackImage != null || _existingBackUrl != null;
+
+    if (!hasFace || !hasBack) {
+      setState(() => _errorMessage = 'Please provide both coin face and back images.');
       return;
     }
 
@@ -175,6 +209,13 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
       }
       if (_coinBackImage != null) {
         backUrl = await _uploadImageToImgBB(_coinBackImage!);
+      }
+
+      if (faceUrl == null || backUrl == null) {
+        setState(() {
+          _errorMessage = 'Image upload failed. Please try again.';
+        });
+        return;
       }
 
       final auth = FirebaseAuth.instance;
@@ -204,16 +245,14 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
         await FirebaseFirestore.instance.collection('products').add(productData);
       }
 
-      if (auth.currentUser != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(auth.currentUser!.uid)
-            .set({
-              'name': _sellerNameController.text,
-              'phone': _sellerPhoneController.text,
-              'email': auth.currentUser?.email,
-            }, SetOptions(merge: true));
-      }
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .set({
+        'name': _sellerNameController.text,
+        'phone': _sellerPhoneController.text,
+        'email': auth.currentUser?.email,
+      }, SetOptions(merge: true));
 
       if (context.mounted) {
         Navigator.pop(context);
@@ -226,131 +265,17 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.editingProduct != null ? 'Edit Coin' : 'Sell Your Coins',style: TextStyle(color: Theme.of(context).colorScheme.primary),)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Text(
-                      _errorMessage!,
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildImagePreview(true),
-                    _buildImagePreview(false),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Coin Name'),
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(labelText: 'Price (EGP)'),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) => _validateNumber(value, 'Price'),
-                ),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _valueController,
-                  decoration: const InputDecoration(labelText: 'Original Value'),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) => _validateNumber(value, 'Value'),
-                ),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _inStockController,
-                  decoration: const InputDecoration(labelText: 'Quantity Available'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) => _validateNumber(value, 'Quantity', allowDecimal: false),
-                ),
-                const SizedBox(height: 16),
-
-                DropdownButtonFormField<String>(
-                  value: _selectedCountry,
-                  items: _countries.map((country) {
-                    return DropdownMenuItem<String>(
-                      value: country,
-                      child: Text(country),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCountry = value;
-                    });
-                  },
-                  decoration: const InputDecoration(labelText: 'Country'),
-                  validator: (value) => value == null ? 'Please select a country' : null,
-                ),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _yearController,
-                  decoration: const InputDecoration(labelText: 'Year (1-2025)'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Please enter a year';
-                    final year = int.tryParse(value);
-                    if (year == null) return 'Please enter a valid number';
-                    if (year < 1 || year > 2025) return 'Year must be between 1 and 2025';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                ElevatedButton(
-                  onPressed: _isUploading ? null : () => _submitForm(context),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: Theme.of(context).primaryColor,
-                  ),
-                  child: _isUploading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          widget.editingProduct != null 
-                              ? 'Update Listing' 
-                              : 'List Coin for Sale',
-                          style: const TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildImagePreview(bool isFace) {
     final currentImage = isFace ? _coinFaceImage : _coinBackImage;
     final existingUrl = isFace ? _existingFaceUrl : _existingBackUrl;
 
     return Column(
       children: [
-        Text(isFace ? 'Coin Face' : 'Coin Back', 
+        Text(isFace ? 'Coin Face' : 'Coin Back',
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () => _pickImage(isFace),
+          onTap: () => _showImageSourcePicker(isFace),
           child: Container(
             height: 150,
             width: 150,
@@ -375,6 +300,113 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.editingProduct != null ? 'Edit Coin' : 'Sell Your Coins',
+          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(_errorMessage!, style: TextStyle(color: Colors.red)),
+                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImagePreview(true),
+                    _buildImagePreview(false),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Coin Name'),
+                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(labelText: 'Price (EGP)'),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => _validateNumber(value, 'Price'),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _valueController,
+                  decoration: const InputDecoration(labelText: 'Original Value'),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => _validateNumber(value, 'Value'),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _inStockController,
+                  decoration: const InputDecoration(labelText: 'Quantity Available'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => _validateNumber(value, 'Quantity', allowDecimal: false),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _selectedCountry,
+                  items: _countries.map((country) {
+                    return DropdownMenuItem<String>(
+                      value: country,
+                      child: Text(country),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCountry = value;
+                    });
+                  },
+                  decoration: const InputDecoration(labelText: 'Country'),
+                  validator: (value) => value == null ? 'Please select a country' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _yearController,
+                  decoration: const InputDecoration(labelText: 'Year (1-2025)'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Please enter a year';
+                    final year = int.tryParse(value);
+                    if (year == null) return 'Please enter a valid number';
+                    if (year < 1 || year > 2025) return 'Year must be between 1 and 2025';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: (_isUploading || _isUploadingImages) ? null : () => _submitForm(context),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    backgroundColor: Theme.of(context).primaryColor,
+                  ),
+                  child: (_isUploading || _isUploadingImages)
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          widget.editingProduct != null ? 'Update Listing' : 'List Coin for Sale',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
