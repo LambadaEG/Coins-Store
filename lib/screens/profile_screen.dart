@@ -132,7 +132,6 @@ class _UserOrdersList extends StatelessWidget {
               confirmDismiss: (direction) => _confirmDelete(context, order.id),
               child: GestureDetector(
                 onTap: () {
-                  // Navigate to the order details screen
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -149,8 +148,7 @@ class _UserOrdersList extends StatelessWidget {
                       children: [
                         Text('Total: EGP ${total.toStringAsFixed(2)}'),
                         Text('Items: ${items.length}'),
-                        Text(DateFormat('MMM dd, yyyy - hh:mm a')
-                            .format(timestamp)),
+                        Text(DateFormat('MMM dd, yyyy - hh:mm a').format(timestamp)),
                       ],
                     ),
                     trailing: IconButton(
@@ -185,7 +183,6 @@ class _UserOrdersList extends StatelessWidget {
                     .collection('orders')
                     .doc(orderId)
                     .delete();
-
                 Navigator.pop(ctx, true);
               } catch (e) {
                 Navigator.pop(ctx);
@@ -202,10 +199,17 @@ class _UserOrdersList extends StatelessWidget {
   }
 }
 
-class _SellerProductsList extends StatelessWidget {
+class _SellerProductsList extends StatefulWidget {
   final String userId;
 
   const _SellerProductsList({required this.userId});
+
+  @override
+  State<_SellerProductsList> createState() => _SellerProductsListState();
+}
+
+class _SellerProductsListState extends State<_SellerProductsList> {
+  String? selectedCountry;
 
   num _safeParseNumber(dynamic value) {
     if (value == null) return 0;
@@ -219,7 +223,7 @@ class _SellerProductsList extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('products')
-          .where('sellerId', isEqualTo: userId)
+          .where('sellerId', isEqualTo: widget.userId)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -230,7 +234,19 @@ class _SellerProductsList extends StatelessWidget {
           return const Center(child: Text('No products listed yet'));
         }
 
-        final products = snapshot.data!.docs.map((doc) {
+        final allDocs = snapshot.data!.docs;
+
+        final allCountries = allDocs
+            .map((doc) => (doc['country'] ?? 'Unknown').toString())
+            .toSet()
+            .toList()
+          ..sort();
+
+        final filteredDocs = selectedCountry == null
+            ? allDocs
+            : allDocs.where((doc) => doc['country'] == selectedCountry).toList();
+
+        final products = filteredDocs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return Product(
             id: doc.id,
@@ -248,12 +264,43 @@ class _SellerProductsList extends StatelessWidget {
           );
         }).toList();
 
-        return ListView.builder(
-          itemCount: products.length,
-          itemBuilder: (context, index) {
-            final product = products[index];
-            return ProductListItem(product: product);
-          },
+        return Column(
+          children: [
+            if (allCountries.length > 1)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Filter by Country'),
+                  value: selectedCountry,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('All Countries'),
+                    ),
+                    ...allCountries.map((country) {
+                      return DropdownMenuItem<String>(
+                        value: country,
+                        child: Text(country),
+                      );
+                    }).toList(),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCountry = value;
+                    });
+                  },
+                ),
+              ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return ProductListItem(product: product);
+                },
+              ),
+            ),
+          ],
         );
       },
     );
@@ -268,9 +315,21 @@ class ProductListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Image.network(product.images.isNotEmpty ? product.images.first : ''),
+      leading: Image.network(
+        product.images.isNotEmpty ? product.images.first : '',
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const Icon(Icons.image),
+      ),
       title: Text(product.name),
-      subtitle: Text('EGP ${product.price.toStringAsFixed(2)}'),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('EGP ${product.price.toStringAsFixed(2)}'),
+          Text('Year: ${product.year}'),
+        ],
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -333,3 +392,4 @@ class ProductListItem extends StatelessWidget {
     );
   }
 }
+
