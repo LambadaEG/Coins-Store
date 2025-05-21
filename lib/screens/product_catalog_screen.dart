@@ -25,6 +25,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   bool _inStockOnly = false;
   RangeValues _priceRange = const RangeValues(0, 200);
   String _sortOption = 'None'; // Options: 'None', 'Year', 'Price'
+  bool _outOfStockOnly = false;
 
   @override
   void initState() {
@@ -82,6 +83,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       builder: (context) {
         RangeValues tempRange = _priceRange;
         bool tempInStock = _inStockOnly;
+        bool tempOutOfStock = _outOfStockOnly;
         String tempSort = _sortOption;
 
         return AlertDialog(
@@ -95,7 +97,20 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       title: const Text('In Stock Only'),
                       value: tempInStock,
                       onChanged: (value) {
-                        setState(() => tempInStock = value!);
+                        setState(() {
+                          tempInStock = value!;
+                          if (value) tempOutOfStock = false;
+                        });
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Out of Stock Only'),
+                      value: tempOutOfStock,
+                      onChanged: (value) {
+                        setState(() {
+                          tempOutOfStock = value!;
+                          if (value) tempInStock = false;
+                        });
                       },
                     ),
                     const SizedBox(height: 10),
@@ -148,6 +163,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               onPressed: () {
                 setState(() {
                   _inStockOnly = tempInStock;
+                  _outOfStockOnly = tempOutOfStock;
                   _priceRange = tempRange;
                   _sortOption = tempSort;
                 });
@@ -235,10 +251,16 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               _selectedYear == 'Any' ||
               product.year.toString() == _selectedYear;
           final matchStock = !_inStockOnly || product.inStock > 0;
+          final matchOutOfStock = !_outOfStockOnly || product.inStock == 0;
           final matchPrice =
               product.price >= _priceRange.start &&
               product.price <= _priceRange.end;
-          return matchCountry && matchYear && matchStock && matchPrice;
+
+          return matchCountry &&
+              matchYear &&
+              matchPrice &&
+              (_inStockOnly ? matchStock : true) &&
+              (_outOfStockOnly ? matchOutOfStock : true);
         }).toList();
     if (_sortOption == 'Year: Newest to Oldest') {
       filteredProducts.sort((a, b) => b.year.compareTo(a.year));
