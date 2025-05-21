@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; // Added for DateFormat
+import 'package:intl/intl.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
   final String orderId;
@@ -10,12 +10,14 @@ class OrderDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Order Details',style: TextStyle(color: Theme.of(context).colorScheme.primary),),),
+      appBar: AppBar(
+        title: Text(
+          'Order Details',
+          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
+      ),
       body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('orders')
-            .doc(orderId)
-            .get(),
+        future: FirebaseFirestore.instance.collection('orders').doc(orderId).get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -30,58 +32,60 @@ class OrderDetailsScreen extends StatelessWidget {
           final total = orderData['total'] as double;
           final timestamp = orderData['timestamp'] as Timestamp;
 
-          return Padding(
+          return ListView(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Order #${orderId.substring(0, 8)}',
-                  style: Theme.of(context).textTheme.titleLarge, // Changed from headline6
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Date: ${DateFormat.yMMMd().add_jm().format(timestamp.toDate())}',
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Items:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                ...items.map((itemId) => FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('products')
-                      .doc(itemId.toString())
-                      .get(),
-                  builder: (context, productSnapshot) {
-                    if (productSnapshot.connectionState == ConnectionState.waiting) {
-                      return const ListTile(
-                        leading: CircularProgressIndicator(),
-                      );
-                    }
-                    if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
-                      return const ListTile(title: Text('Product not found'));
-                    }
-                    final product = productSnapshot.data!.data() as Map<String, dynamic>;
-                    return ListTile(
-                      leading: product['images'] != null && product['images'].isNotEmpty
-                          ? Image.network(product['images'][0], width: 50, height: 50)
-                          : const Icon(Icons.monetization_on),
-                      title: Text(product['name'] ?? 'Unnamed Product'),
-                      subtitle: Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
+            children: [
+              Text(
+                'Order #${orderId.substring(0, 8)}',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Date: ${DateFormat.yMMMd().add_jm().format(timestamp.toDate())}',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Items:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...items.map((itemId) => FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('products').doc(itemId.toString()).get(),
+                builder: (context, productSnapshot) {
+                  if (productSnapshot.connectionState == ConnectionState.waiting) {
+                    return const ListTile(
+                      leading: CircularProgressIndicator(),
                     );
-                  },
-                )),
-                const SizedBox(height: 16),
-                Text(
-                  'Total: EGP ${total.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  }
+                  if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
+                    return const ListTile(title: Text('Product not found'));
+                  }
+                  final product = productSnapshot.data!.data() as Map<String, dynamic>;
+                  return ListTile(
+                    leading: product['images'] != null && product['images'].isNotEmpty
+                        ? Image.network(product['images'][0], width: 50, height: 50)
+                        : const Icon(Icons.monetization_on),
+                    title: Text(product['name'] ?? 'Unnamed Product'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
+                        if (product['year'] != null)
+                          Text('Year: ${product['year']}'),
+                      ],
+                    ),
+                  );
+                },
+              )),
+              const SizedBox(height: 16),
+              Text(
+                'Total: EGP ${total.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
