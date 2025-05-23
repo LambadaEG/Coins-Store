@@ -212,7 +212,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
                       final product = productSnapshot.data!.data() as Map<String, dynamic>;
                       final quantity = item is Map ? item['quantity'] ?? 1 : 1;
-                      final inStock = _parseStock(product['inStock']);
+                      //final inStock = _parseStock(product['inStock']);
 
                       return ListTile(
                         leading: product['images'] != null &&
@@ -226,11 +226,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           children: [
                             Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
                             Text('Quantity: $quantity'),
-                            Text('Stock: $inStock',
-                                style: TextStyle(
-                                    color: inStock > 0 ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.bold)),
-                            if (product['year'] != null) Text('Year: ${product['year']}'),
+                            //Text('Stock: $inStock',
+                            //    style: TextStyle(
+                            //        color: inStock > 0 ? Colors.green : Colors.red,
+                            //        fontWeight: FontWeight.bold)),
+                           // if (product['year'] != null) Text('Year: ${product['year']}'),
                           ],
                         ),
                       );

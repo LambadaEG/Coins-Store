@@ -37,6 +37,12 @@ class ProfileScreen extends StatelessWidget {
               'Profile',
               style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _showEditProfileDialog(context, userId),
+              ),
+            ],
           ),
           body: StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance
@@ -58,9 +64,29 @@ class ProfileScreen extends StatelessWidget {
                 length: 2,
                 child: Column(
                   children: [
-                    ListTile(
-                      title: Text(userData['name']?.toString() ?? 'No Name'),
-                      subtitle: Text(userData['email']?.toString() ?? 'No Email'),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userData['name']?.toString() ?? 'No Name',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            userData['email']?.toString() ?? 'No Email',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          if (userData['phone'] != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              userData['phone']?.toString() ?? '',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                     const TabBar(
                       tabs: [
@@ -84,6 +110,109 @@ class ProfileScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  static void _showEditProfileDialog(BuildContext context, String userId) {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final _formKey = GlobalKey<FormState>();
+
+    // Fetch current user data to pre-fill the form
+    FirebaseFirestore.instance.collection('users').doc(userId).get().then((doc) {
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        nameController.text = data['name']?.toString() ?? '';
+        phoneController.text = data['phone']?.toString() ?? '';
+      }
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                    hintText: '+1234567890',
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your phone number';
+                    }
+                    // Simple phone number validation
+                    if (!RegExp(r'^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$')
+                        .hasMatch(value)) {
+                      return 'Enter a valid phone number';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .update({
+                    'name': nameController.text.trim(),
+                    'phone': phoneController.text.trim(),
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profile updated successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating profile: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -392,4 +521,3 @@ class ProductListItem extends StatelessWidget {
     );
   }
 }
-
