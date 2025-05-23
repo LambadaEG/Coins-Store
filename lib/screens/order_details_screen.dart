@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
@@ -12,6 +13,51 @@ class OrderDetailsScreen extends StatefulWidget {
 }
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  bool _isSeller = false;
+  bool _loadingUserCheck = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfUserIsSeller();
+  }
+
+  Future<void> _checkIfUserIsSeller() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final orderDoc = await FirebaseFirestore.instance.collection('orders').doc(widget.orderId).get();
+
+    if (!orderDoc.exists) {
+      setState(() {
+        _loadingUserCheck = false;
+      });
+      return;
+    }
+
+    final orderData = orderDoc.data()!;
+    final items = orderData['items'] as List<dynamic>;
+
+    final sellerIds = <String>{};
+
+    for (final item in items) {
+      final productId = item is Map ? item['productId'] : item.toString();
+      final productDoc = await FirebaseFirestore.instance.collection('products').doc(productId).get();
+      if (productDoc.exists) {
+        final productData = productDoc.data()!;
+        final sellerId = productData['sellerId']?.toString();
+        if (sellerId != null) {
+          sellerIds.add(sellerId);
+        }
+      }
+    }
+
+    setState(() {
+      _isSeller = sellerIds.length == 1 && sellerIds.first == currentUser.uid;
+      _loadingUserCheck = false;
+    });
+  }
+
   Future<void> _confirmOrder(Map<String, dynamic> orderData) async {
     try {
       final items = orderData['items'] as List<dynamic>;
@@ -111,20 +157,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Order Details',
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
-        ),
+        title: Text('Order Details', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance.collection('orders').doc(widget.orderId).get(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || _loadingUserCheck) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Order not found'));
+            return const Center(child: Text('The order is cancelled'));
           }
 
           final orderData = snapshot.data!.data() as Map<String, dynamic>;
@@ -141,9 +184,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              Text(
-                'Date: ${DateFormat.yMMMd().add_jm().format(timestamp.toDate())}',
-              ),
+              Text('Date: ${DateFormat.yMMMd().add_jm().format(timestamp.toDate())}'),
               if (orderData['confirmedAt'] != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
@@ -153,82 +194,71 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   ),
                 ),
               const SizedBox(height: 16),
-              const Text(
-                'Items:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Items:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ...items.map((item) => FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance.collection('products')
-                  .doc(item is Map ? item['productId'] : item.toString()).get(),
-                builder: (context, productSnapshot) {
-                  if (productSnapshot.connectionState == ConnectionState.waiting) {
-                    return const ListTile(
-                      leading: CircularProgressIndicator(),
-                    );
-                  }
-                  if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
-                    return const ListTile(title: Text('Product not found'));
-                  }
+                    future: FirebaseFirestore.instance
+                        .collection('products')
+                        .doc(item is Map ? item['productId'] : item.toString())
+                        .get(),
+                    builder: (context, productSnapshot) {
+                      if (productSnapshot.connectionState == ConnectionState.waiting) {
+                        return const ListTile(leading: CircularProgressIndicator());
+                      }
 
-                  final product = productSnapshot.data!.data() as Map<String, dynamic>;
-                  final quantity = item is Map ? item['quantity'] ?? 1 : 1;
-                  final inStock = _parseStock(product['inStock']);
+                      if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
+                        return const ListTile(title: Text('Product not found'));
+                      }
 
-                  return ListTile(
-                    leading: product['images'] != null && product['images'].isNotEmpty
-                        ? Image.network(product['images'][0], width: 50, height: 50)
-                        : const Icon(Icons.monetization_on),
-                    title: Text(product['name'] ?? 'Unnamed Product'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
-                        Text('Quantity: $quantity'),
-                        Text('Stock: $inStock',
-                          style: TextStyle(
-                            color: inStock > 0 ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.bold
-                          )),
-                        if (product['year'] != null)
-                          Text('Year: ${product['year']}'),
-                      ],
-                    ),
-                  );
-                },
-              )),
+                      final product = productSnapshot.data!.data() as Map<String, dynamic>;
+                      final quantity = item is Map ? item['quantity'] ?? 1 : 1;
+                      final inStock = _parseStock(product['inStock']);
+
+                      return ListTile(
+                        leading: product['images'] != null &&
+                                product['images'] is List &&
+                                product['images'].isNotEmpty
+                            ? Image.network(product['images'][0], width: 50, height: 50)
+                            : const Icon(Icons.monetization_on),
+                        title: Text(product['name'] ?? 'Unnamed Product'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
+                            Text('Quantity: $quantity'),
+                            Text('Stock: $inStock',
+                                style: TextStyle(
+                                    color: inStock > 0 ? Colors.green : Colors.red,
+                                    fontWeight: FontWeight.bold)),
+                            if (product['year'] != null) Text('Year: ${product['year']}'),
+                          ],
+                        ),
+                      );
+                    },
+                  )),
               const SizedBox(height: 16),
               Text(
                 'Total: EGP ${total.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 24),
-              if (!isConfirmed)
+              if (_isSeller && !isConfirmed)
                 ElevatedButton(
                   onPressed: () => _confirmOrder(orderData),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  child: const Text(
-                    'Confirm Order Purchase',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: const Text('Confirm Order Purchase', style: TextStyle(color: Colors.white)),
                 ),
-              if (isConfirmed)
+              if (_isSeller && isConfirmed)
                 ElevatedButton(
                   onPressed: () => _undoConfirmation(orderData),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  child: const Text(
-                    'Undo Confirmation',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: const Text('Undo Confirmation', style: TextStyle(color: Colors.white)),
                 ),
             ],
           );
