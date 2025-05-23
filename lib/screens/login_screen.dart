@@ -63,7 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         setState(() {
-          _errorMessage = 'Please verify your email address before logging in.';
+          _errorMessage =
+              'Please verify your email address before logging in.';
         });
         _startCountdown();
       }
@@ -86,6 +87,27 @@ class _LoginScreenState extends State<LoginScreen> {
       _startCountdown();
     } catch (e) {
       setState(() => _errorMessage = 'Failed to resend: ${e.toString()}');
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    if (_email.trim().isEmpty || !_email.contains('@')) {
+      setState(() {
+        _errorMessage = 'Enter a valid email to reset password';
+      });
+      return;
+    }
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.sendPasswordResetEmail(_email);
+      setState(() {
+        _errorMessage = 'Password reset email sent. Check your inbox.';
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
     }
   }
 
@@ -126,17 +148,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   initialValue: _email,
                   decoration: InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
-                  validator:
-                      (value) => value!.contains('@') ? null : 'Invalid email',
-                  onSaved: (value) => _email = value!.trim(),
+                  validator: (value) =>
+                      value!.contains('@') ? null : 'Invalid email',
+                  onChanged: (value) => _email = value.trim(),
                 ),
                 SizedBox(height: 15),
                 TextFormField(
                   decoration: InputDecoration(labelText: 'Password'),
                   obscureText: true,
-                  validator:
-                      (value) =>
-                          value!.length >= 6 ? null : 'Minimum 6 characters',
+                  validator: (value) =>
+                      value!.length >= 6 ? null : 'Minimum 6 characters',
                   onSaved: (value) => _password = value!,
                 ),
                 SizedBox(height: 20),
@@ -146,10 +167,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         _errorMessage!,
                         style: TextStyle(
-                          color:
-                              _errorMessage!.startsWith('Verification')
-                                  ? Colors.green
-                                  : Colors.red,
+                          color: _errorMessage!
+                                  .startsWith('Verification') ||
+                              _errorMessage!.startsWith('Password reset')
+                              ? Colors.green
+                              : Colors.red,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -170,10 +192,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             TextButton(
-                              onPressed:
-                                  _resendCountdown == 0
-                                      ? _resendVerificationEmail
-                                      : null,
+                              onPressed: _resendCountdown == 0
+                                  ? _resendVerificationEmail
+                                  : null,
                               child: Text('Resend Verification Email'),
                             ),
                           ],
@@ -184,13 +205,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 _isLoading
                     ? CircularProgressIndicator()
                     : ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
+                        onPressed: _submit,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 50),
+                        ),
+                        child: Text('Login'),
                       ),
-                      child: Text('Login'),
-                    ),
                 SizedBox(height: 10),
+                TextButton(
+                  onPressed: _resetPassword,
+                  child: Text('Forgot your password?'),
+                ),
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
