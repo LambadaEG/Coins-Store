@@ -275,7 +275,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'EG Coins',
+          'EGC',
           style: TextStyle(color: Theme.of(context).colorScheme.primary),
         ),
         leadingWidth: 150,

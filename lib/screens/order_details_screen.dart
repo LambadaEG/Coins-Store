@@ -49,8 +49,10 @@ class OrderDetailsScreen extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              ...items.map((itemId) => FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance.collection('products').doc(itemId.toString()).get(),
+              ...items.map((item) => FutureBuilder<DocumentSnapshot>(
+                // Changed to handle both item ID and quantity if stored as map
+                future: FirebaseFirestore.instance.collection('products')
+                  .doc(item is Map ? item['productId'] : item.toString()).get(),
                 builder: (context, productSnapshot) {
                   if (productSnapshot.connectionState == ConnectionState.waiting) {
                     return const ListTile(
@@ -60,7 +62,11 @@ class OrderDetailsScreen extends StatelessWidget {
                   if (!productSnapshot.hasData || !productSnapshot.data!.exists) {
                     return const ListTile(title: Text('Product not found'));
                   }
+                  
                   final product = productSnapshot.data!.data() as Map<String, dynamic>;
+                  final quantity = item is Map ? item['quantity'] : 1;
+                  final inStock = product['inStock'] ?? 0;
+                  
                   return ListTile(
                     leading: product['images'] != null && product['images'].isNotEmpty
                         ? Image.network(product['images'][0], width: 50, height: 50)
@@ -70,6 +76,12 @@ class OrderDetailsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
+                        Text('Quantity: $quantity'),
+                        Text('Stock Left: $inStock', 
+                          style: TextStyle(
+                            color: inStock > 0 ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold
+                          )),
                         if (product['year'] != null)
                           Text('Year: ${product['year']}'),
                       ],
