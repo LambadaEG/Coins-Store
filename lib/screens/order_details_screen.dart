@@ -225,6 +225,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('EGP ${product['price']?.toStringAsFixed(2) ?? '0.00'}'),
+                            Text('Year: ${product['year']}'),
                             Text('Quantity: $quantity'),
                             //Text('Stock: $inStock',
                             //    style: TextStyle(
