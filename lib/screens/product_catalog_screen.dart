@@ -589,10 +589,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                       Text(
-                                        'Seller: ${product.sellerPhone}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                      Text(
                                         'Stock: ${product.inStock}',
                                         style: TextStyle(
                                           fontSize: 12,
@@ -642,24 +638,24 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-                label: const Text(
-                  'Request Unlisted Coin',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () => Navigator.pushNamed(context, '/request'),
-              ),
-            ),
+            //Padding(
+            //  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //  child: ElevatedButton.icon(
+            //    icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+            //    label: const Text(
+            //      'Request Unlisted Coin',
+            //      style: TextStyle(color: Colors.white),
+            //    ),
+            //    style: ElevatedButton.styleFrom(
+            //      backgroundColor: Theme.of(context).primaryColor,
+            //      minimumSize: const Size(double.infinity, 50),
+            //      shape: RoundedRectangleBorder(
+            //        borderRadius: BorderRadius.circular(10),
+            //      ),
+            //    ),
+            //    onPressed: () => Navigator.pushNamed(context, '/request'),
+            //  ),
+            // ),
           ],
         ),
       ),
