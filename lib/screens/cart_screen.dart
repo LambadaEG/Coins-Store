@@ -37,7 +37,7 @@ class CartScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _placeOrder(BuildContext context) async {
+  Future<void> _placeOrder(BuildContext context, String deliveryLocation) async {
     final catalogState = Provider.of<ProductCatalogState>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
     final user = authService.currentUser!;
@@ -65,6 +65,7 @@ class CartScreen extends StatelessWidget {
         'total': cart.fold(0.0, (sum, item) => sum + item.price),
         'timestamp': FieldValue.serverTimestamp(),
         'status': 'pending',
+        'deliveryLocation': deliveryLocation,
       });
 
       // Create notifications for sellers
@@ -85,7 +86,7 @@ class CartScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Order placed successfully!'),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
       Navigator.pop(context);
@@ -98,6 +99,56 @@ class CartScreen extends StatelessWidget {
       );
     }
   }
+
+Future<void> _showDeliveryLocationDialog(BuildContext context) async {
+  String? selectedLocation;
+  final locations = [
+    'كلية الهندسة',
+    'سيدي جابر',
+    'سوق ديانا - القاهرة'
+  ];
+
+  await showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Select Delivery Location'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: locations.map((location) => RadioListTile<String>(
+                title: Text(location),
+                value: location,
+                groupValue: selectedLocation,
+                onChanged: (value) {
+                  setState(() {
+                    selectedLocation = value;
+                  });
+                },
+              )).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: selectedLocation == null 
+                    ? null 
+                    : () {
+                        Navigator.pop(context);
+                        _placeOrder(context, selectedLocation!);
+                      },
+                child: const Text('Confirm'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +311,7 @@ class CartScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: () => _placeOrder(context),
+                    onPressed: () => _showDeliveryLocationDialog(context),
                     child: const Text(
                       'Place Order',
                       style: TextStyle(fontSize: 18, color: Colors.white),
