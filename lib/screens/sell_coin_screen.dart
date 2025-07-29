@@ -44,7 +44,7 @@ class _SellCoinScreenState extends State<SellCoinScreen> {
     'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia',
     'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria',
     'Burkina Faso', 'Burundi', 'Côte d\'Ivoire', 'Cabo Verde', 'Cambodia',
-    'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile',
+    'Cameroon', 'Canada', 'Central Africa', 'Chad', 'Chile',
     'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia',
     'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica',
     'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea',
