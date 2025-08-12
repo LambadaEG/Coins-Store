@@ -101,32 +101,31 @@ class CartScreen extends StatelessWidget {
   }
 
 Future<void> _showDeliveryLocationDialog(BuildContext context) async {
-  String? selectedLocation;
-  final locations = [
-    'كلية الهندسة',
-    'سيدي جابر',
-    'سوق ديانا - القاهرة'
-  ];
+  final locations = ['كلية الهندسة', 'سيدي جابر', 'سوق ديانا - القاهرة'];
 
   await showDialog(
     context: context,
     builder: (context) {
+      String? selectedLocation;
+
       return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
             title: const Text('Select Delivery Location'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
-              children: locations.map((location) => RadioListTile<String>(
-                title: Text(location),
-                value: location,
-                groupValue: selectedLocation,
-                onChanged: (value) {
-                  setState(() {
-                    selectedLocation = value;
-                  });
-                },
-              )).toList(),
+              children: locations.map((location) {
+                return RadioListTile<String>(
+                  title: Text(location),
+                  value: location,
+                  groupValue: selectedLocation,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLocation = value;
+                    });
+                  },
+                );
+              }).toList(),
             ),
             actions: [
               TextButton(
@@ -134,8 +133,8 @@ Future<void> _showDeliveryLocationDialog(BuildContext context) async {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: selectedLocation == null 
-                    ? null 
+                onPressed: selectedLocation == null
+                    ? null
                     : () {
                         Navigator.pop(context);
                         _placeOrder(context, selectedLocation!);
@@ -149,6 +148,8 @@ Future<void> _showDeliveryLocationDialog(BuildContext context) async {
     },
   );
 }
+
+
 
   @override
   Widget build(BuildContext context) {
